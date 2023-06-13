@@ -1,0 +1,435 @@
+---
+title: "Fit VBGE models to back-calculated length-at-age"
+author: "Max Lindmark, Jan Ohlberger, Anna Gårdmark"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+format: 
+  html:
+    code-fold: true
+    embed-resources: true
+    fig-width: 12
+    fig-height: 10
+editor: source
+execute: 
+  echo: true
+  eval: true
+  cache: true
+---
+
+```{r setup, include = FALSE, cache=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 12,
+  fig.asp = 0.618,
+  fig.align ='center'
+)
+```
+
+## Load libraries
+
+```{r}
+#| cache=FALSE
+pkgs <- c("tidyverse", "tidylog", "rTPC", "nls.multstart", "broom", "RColorBrewer", "viridis", "minpack.lm")
+
+## minpack.lm needed if using nlsLM()
+if(length(setdiff(pkgs, rownames(installed.packages()))) > 0){
+
+    install.packages(setdiff(pkgs, rownames(installed.packages())), dependencies = T)
+  
+  }
+
+invisible(lapply(pkgs, library,character.only = T))
+
+# devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
+library(ggsidekick)
+theme_set(theme_sleek())
+
+# Load functions
+home <- here::here()
+fxn <- list.files(paste0(home, "/R/functions"))
+invisible(sapply(FUN = source, paste0(home, "/R/functions/", fxn)))
+```
+
+## Read and trim data
+
+```{r}
+d <- #read_csv(paste0(home, "/data/for_analysis/dat.csv")) |> 
+  read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/for_analysis/dat.csv") |> 
+  filter(age_ring == "Y") # use only length-at-age by filtering on age_ring
+
+# Sample size by area and cohort
+ns <- d |> 
+  group_by(cohort, area) |> 
+  summarise(n = n())
+
+# Minimum number of observations per area and cohort
+d$area_cohort <- as.factor(paste(d$area, d$cohort))
+
+d <- d |>
+  group_by(area_cohort) |> 
+  filter(n() > 100)
+
+# Minimum number of observations per area, cohort, and age
+d$area_cohort_age <- as.factor(paste(d$area, d$cohort, d$age_bc))
+
+d <- d |>
+  group_by(area_cohort_age) |> 
+  filter(n() > 10)
+
+# Minimum number of cohorts in a given area
+cnt <- d |>
+  group_by(area) |>
+  summarise(n = n_distinct(cohort)) |>
+  filter(n >= 10)
+
+d <- d[d$area %in% cnt$area, ]
+
+# Plot cleaned data
+ggplot(d, aes(age_bc, length_mm)) +
+  geom_jitter(size = 0.1, height = 0, alpha = 0.1) +
+  scale_x_continuous(breaks = seq(20)) +
+  theme(axis.text.x = element_text(angle = 0)) +
+  theme(axis.text = element_text(size = 12), axis.title = element_text(size = 15)) +
+  labs(x = "Age", y = "Length (mm)") +
+  guides(color = "none") + 
+  facet_wrap(~area, scale = "free_x")
+
+# Longitude and latitude attributes for each area
+area <- c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA", "SI_EK", "SI_HA", "TH", "VN")
+nareas <- length(area)
+lat <- c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4, 56.1, 57.5)
+lon <- c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7, 15.9, 16.9)
+area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) |>
+  mutate_at(c("lat","lon"), as.numeric)
+```
+
+## Fit VBGE models
+
+```{r}
+# Get individual growth parameters (functions: VBGF/Gompertz,nls_out,fit_nls)
+IVBG <- d |> 
+  group_by(ID) |> 
+  summarize(k = nls_out(fit_nls(length_mm, age_bc, min_nage = 4, model = "VBGF"))$k,
+            k_se = nls_out(fit_nls(length_mm, age_bc, min_nage = 4, model = "VBGF"))$k_se,
+            linf = nls_out(fit_nls(length_mm, age_bc, min_nage = 4, model = "VBGF"))$linf,
+            linf_se = nls_out(fit_nls(length_mm, age_bc, min_nage = 4, model = "VBGF"))$linf_se)
+```
+
+## Inspect predictions
+
+```{r}
+#| include: false 
+#| eval: false 
+
+na_ids <- IVBG |>
+  mutate(na = ifelse(is.na(k_se) == TRUE, "na", "not na")) |>
+  select(ID, na)
+
+test <- d |>
+  ungroup() |>
+  left_join(na_ids)
+
+test |>
+  mutate(age_group = ifelse(age_catch >= 4, "4 or older", "1-3")) |>
+  ggplot(aes(age_catch, fill = age_group)) +
+  geom_histogram() +
+  facet_wrap(~na, ncol = 1)
+
+# There are some NA's that *are* the right age, and no NAs below the correct age
+# They just don't seem to converge!
+test2 <- test |>
+  ungroup() |>
+  filter(na == "na") |>
+  filter(age_catch > 4) |> # age 4 was the min_age argument
+  arrange(ID) |>
+  as.data.frame()
+
+test3 <- d |> filter(ID == "1970.211.JM.female.5.K010")
+
+plot(test3$age_bc, test3$length_mm)
+
+nls_out(fit_nls(test3$length_mm, test3$age_bc, min_nage = 4, model = "VBGF"))
+```
+
+```{r}
+IVBG <- IVBG |> drop_na(k) # The NAs are because the model didn't converge or because they were below the threshold age
+
+IVBG <- IVBG |>
+  mutate(k_lwr = k - 1.96*k_se,
+         k_upr = k + 1.96*k_se,
+         linf_lwr = linf - 1.96*linf_se,
+         linf_upr = linf + 1.96*linf_se,
+         row_id = row_number())
+
+# Plot all K's
+IVBG |>
+  #filter(row_id < 5000) |>
+  ggplot(aes(row_id, k, ymin = k_lwr, ymax = k_upr)) +
+  geom_point(alpha = 0.5) +
+  geom_errorbar(alpha = 0.5) +
+  NULL
+
+# Plot all L_inf's
+IVBG |>
+  #filter(row_id < 5000) |>
+  ggplot(aes(row_id, linf, ymin = linf_lwr, ymax = linf_upr)) +
+  geom_point(alpha = 0.5) +
+  geom_errorbar(alpha = 0.5) +
+  NULL
+
+# We can also consider removing the upper 95% quantile of standard errors (not quantile of K directly)
+IVBG |>
+  tidylog::mutate(keep = ifelse(k > quantile(k_se, probs = 0.95), "N", "Y")) |>
+  #filter(row_id < 10000) |>
+  ggplot(aes(row_id, k, ymin = k_lwr, ymax = k_upr, color = keep)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~keep, ncol = 1) +
+  geom_errorbar(alpha = 0.5) +
+  NULL
+
+# Add back cohort and area variables
+IVBG <- IVBG |> 
+  left_join(d |> select(ID, area_cohort)) |> 
+  separate(area_cohort, into = c("area", "cohort"), remove = TRUE, sep = " ") |> 
+  mutate(cohort = as.numeric(cohort))
+
+# Summarise and save for sample size
+sample_size <- IVBG |>
+  group_by(area) |> 
+  summarise(n_cohort = length(unique(cohort)),
+            min_cohort = min(cohort),
+            max_cohort = min(cohort),
+            n_individuals = length(unique(ID)),
+            n_data_points = n())
+
+write_csv(sample_size, paste0(home, "/output/sample_size.csv"))
+
+# Compare how the means and quantiles differ depending on this filtering
+IVBG_filter <- IVBG |>
+  tidylog::drop_na(k_se) |>
+  tidylog::filter(k_se < quantile(k_se, probs = 0.95))
+
+# Summarize growth coefficients by cohort and area
+VBG <- IVBG |>
+  group_by(cohort, area) |>
+  summarize(k_mean = mean(k, na.rm = T),
+            k_median = quantile(k, prob = 0.5, na.rm = T),
+            k_lwr = quantile(k, prob = 0.05, na.rm = T),
+            k_upr = quantile(k, prob = 0.95, na.rm = T)) |> 
+  ungroup()
+
+VBG_filter <- IVBG_filter |>
+  group_by(cohort, area) |>
+  summarize(k_mean = mean(k, na.rm = T),
+            k_median = quantile(k, prob = 0.5, na.rm = T),
+            k_lwr = quantile(k, prob = 0.05, na.rm = T),
+            k_upr = quantile(k, prob = 0.95, na.rm = T)) |> 
+  ungroup()
+
+ggplot() +
+  geom_ribbon(data = VBG, aes(cohort, k_median, ymin = k_lwr, ymax = k_upr, fill = "All k's"), alpha = 0.4) +
+  geom_ribbon(data = VBG_filter, aes(cohort, k_median, ymin = k_lwr, ymax = k_upr, fill = "Filtered"), alpha = 0.4) +
+  geom_line(data = VBG, aes(cohort, k_median, color = "All k's")) + 
+  geom_line(data = VBG_filter, aes(cohort, k_median, color = "Filtered")) + 
+  guides(fill = FALSE) +
+  facet_wrap(~area)
+
+ggplot() +
+  geom_line(data = VBG, aes(cohort, k_median, color = "All k's")) + 
+  geom_line(data = VBG_filter, aes(cohort, k_median, color = "Filtered")) + 
+  guides(fill = FALSE) +
+  facet_wrap(~area)
+
+# No difference at all really. We should probably just discuss that with this model, achieving biologically reasonable parameter values and a good fit to data are sometimes two different things. In our case, we just want a representative value of the growth (as in time to reach average maximum size in the population) that accounts for the entire growth trajectory of an individual, for each area and cohort.
+```
+
+## Add GAM-predicted temperature to growth models
+
+```{r}
+pred_temp <- read_csv(paste0(home, "/output/gam_predicted_temps.csv")) |> 
+  rename(cohort = year)
+
+VBG <- VBG |> left_join(pred_temp, by = c("area", "cohort"))
+
+# save data for map-plot
+cohort_sample_size <- IVBG |>
+  group_by(area, cohort) |> 
+  summarise(n = n()) # individuals, not samples!
+  
+VBG <- left_join(VBG, cohort_sample_size, by = c("cohort", "area"))
+
+write_csv(VBG, paste0(home, "/output/vbg.csv"))
+```
+
+## Plot VBGE fits
+
+```{r}
+ids <- d |> group_by(area) |> 
+  sample_n(50)
+
+dat <- IVBG %>%
+  filter(ID %in% ids$ID)
+
+d |>
+  ungroup() |> 
+  filter(ID %in% ids$ID) |>
+  left_join(dat) |> 
+  tidylog::mutate(length_mm_pred = linf*(1-exp(-k*age_bc))) |>
+  ggplot(aes(age_bc, length_mm, group = ID, color = ID)) +
+  geom_jitter(width = 0.2, height = 0, alpha = 0.5, size = 0.6) +
+  geom_line(aes(age_bc, length_mm_pred, group = ID, color = ID), inherit.aes = FALSE, alpha = 0.5) + 
+  guides(color = "none") +
+  scale_color_viridis(discrete = TRUE, name = "Area", option = "cividis") +
+  labs(x = "Age (yrs)", y = "Length (mm)") +
+  facet_wrap(~area)
+
+ggsave(paste0(home, "/figures/vb_fits.pdf" ), width = 17, height = 17, units = "cm")
+
+k <- IVBG |> 
+  ggplot(aes(k, fill = area, color = area)) + 
+  geom_density(alpha = 0.4, fill = NA) +  
+  scale_color_viridis(discrete = TRUE, name = "Area") +
+  #scale_fill_viridis(discrete = TRUE, name = "Area") +
+  coord_cartesian(expand = 0) + 
+  guides(color = "none") +
+  theme(legend.position = c(0.8, 0.8))
+
+linf <- IVBG |> 
+  ggplot(aes(linf, fill = area, color = area)) + 
+  geom_density(alpha = 0.4, fill = NA) +  
+  scale_color_viridis(discrete = TRUE, name = "Area") +
+  #scale_fill_viridis(discrete = TRUE, name = "Area") +
+  coord_cartesian(expand = 0, xlim = c(0, 2000)) + 
+  theme(legend.position = c(0.9, 0.5))
+
+k / linf
+
+ggsave(paste0(home, "/figures/vb_pars.pdf" ), width = 17, height = 17, units = "cm")
+```
+
+## Fit Sharpe-Schoolfield model to K
+
+By area
+
+```{r}
+model <- 'sharpeschoolhigh_1981'
+
+# Get starting values on full dataset for Sharpe-Schoolfield model
+dat <- VBG |>
+  select(k_median, temp) |>
+  rename(rate = k_median)
+
+lower <- get_lower_lims(dat$temp, dat$rate, model_name = model)
+upper <- get_upper_lims(dat$temp, dat$rate, model_name = model)
+start <- get_start_vals(dat$temp, dat$rate, model_name = model)
+  
+# Sharpe-Schoolfield model fit to data for each area
+preds <- NULL
+
+for(a in unique(VBG$area)) {
+  
+  # Get data
+  dat <- VBG |> 
+    filter(area == a) |> 
+    select(k_median, temp, area) |> 
+    rename(rate = k_median)
+  
+  # Fit model
+  fit <- nls_multstart(
+    rate ~ sharpeschoolhigh_1981(temp = temp, r_tref, e, eh, th, tref = 8),
+    data = dat,
+    iter = c(3, 3, 3, 3),
+    start_lower = start*0.5,
+    start_upper = start*2,
+    lower = lower,
+    upper = upper,
+    supp_errors = 'Y'
+    )
+  
+  # Make predictions on new data
+  new_data <- data.frame(temp = seq(min(dat$temp), max(dat$temp), length.out = 100))
+  
+  pred <- augment(fit, newdata = new_data) |>
+    mutate(area = a)
+  
+  # Add to general data frame
+  preds <- data.frame(rbind(preds, pred))
+  
+}
+```
+
+All areas pooled
+
+```{r}
+# One sharpe schoolfield fitted to all data
+fit_all <- nls_multstart(
+    k_median ~ sharpeschoolhigh_1981(temp = temp, r_tref, e, eh, th, tref = 8),
+    data = VBG,
+    iter = c(3, 3, 3, 3),
+    start_lower = start*0.5,
+    start_upper = start*2,
+    lower = lower,
+    upper = upper,
+    supp_errors = 'Y'
+    )
+
+# Make predictions on new data
+new_data_all <- data.frame(temp = seq(min(VBG$temp),
+                                      max(VBG$temp),
+                                      length.out = 100))
+
+pred_all <- augment(fit_all, newdata = new_data_all) |> 
+  mutate(area = "all")
+
+# Add t_opt
+kb <- 8.62e-05
+data.frame(par = names(coef(fit_all)),
+           est = coef(fit_all)) |> 
+  pivot_wider(names_from = par, values_from = est) |> 
+  summarise(t_opt = (eh*th) / (eh + kb*th*log((eh/e)-1)))
+```
+
+## Plot Sharpe Schoolfield fits
+
+```{r}
+# Nice color palette, order based on average temperature!
+nareas <- length(unique(preds$area))
+colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)
+
+# preds <- preds |>
+#   group_by(area) |> 
+#   mutate(mean_temp = mean(temp)) |> 
+#   ungroup() |> 
+#   mutate(area = fct_reorder(area, as.integer(mean_temp)))
+# 
+# preds |> group_by(area) |> summarise(m = mean(temp)) |> arrange(m)
+# 
+# VBG <- VBG |> 
+#   group_by(area) |> 
+#   mutate(mean_temp = mean(temp)) |> 
+#   ungroup() |> 
+#   mutate(area = fct_reorder(area, as.integer(mean_temp)))
+# 
+# VBG |> group_by(area) |> summarise(m = mean(temp)) |> arrange(m)
+
+# Check the temperature model script!
+order <- c("SI_HA", "BT", "TH", "SI_EK", "FM", "VN", "JM", "MU", "FB", "BS", "HO", "RA") 
+
+# Plot growth coefficients by year and area against mean SST
+preds |>
+  ggplot(aes(temp, .fitted, color = factor(area, order))) + 
+  geom_point(data = VBG, aes(temp, k_median, color = factor(area, order)), size = 0.6) +
+  geom_line(aes(temp, .fitted, group = factor(area)), linewidth = 1) +
+  geom_line(data = pred_all, aes(temp, .fitted),
+            linewidth = 1, inherit.aes = FALSE, linetype = 2) +
+  scale_color_manual(values = colors, name = "Area") +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  theme(axis.text.x = element_text(angle = 0)) +
+  theme(axis.text = element_text(size = 12), axis.title = element_text(size = 15)) +
+  guides(color = guide_legend(override.aes = list(size = 1))) +
+  scale_x_continuous(breaks = seq(-5, 20, 1)) +
+  labs(x = "Temperature (C)", y = "Growth rate coefficient") +
+  NULL
+
+ggsave(paste0(home, "/figures/sharpe_school.pdf" ), width = 17, height = 17, units = "cm")
+```

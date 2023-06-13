@@ -1,0 +1,46 @@
+---
+title: "Explore temperature data and fit preliminary models"
+author: "Max Lindmark, Jan Ohlberger, Anna Gårdmark"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+format: 
+  html:
+    code-fold: true
+    embed-resources: true
+    fig-width: 12
+    fig-height: 10
+editor: source
+execute: 
+  echo: true
+  eval: true
+  cache: true
+---
+
+```{r setup, include = FALSE, cache=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 12,
+  fig.asp = 0.618,
+  fig.align ='center'
+)
+```
+
+## Load libraries
+
+```{r libraries}
+pkgs <- c("tidyverse","tidylog","rnaturalearth","rnaturalearthdata","RColorBrewer",
+          "forcats","viridis","broom","rgdal","ggmap","sf","ggridges") 
+
+## minpack.lm needed if using nlsLM()
+if(length(setdiff(pkgs,rownames(installed.packages()))) > 0){
+
+    install.packages(setdiff(pkgs,rownames(installed.packages())),dependencies=T)
+  
+  }
+
+invisible(lapply(pkgs,library,character.only=T))
+
+# devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
+library(ggsidekick)
+theme_set(theme_sleek())
+```
