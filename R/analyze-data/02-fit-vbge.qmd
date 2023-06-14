@@ -29,7 +29,7 @@ knitr::opts_chunk$set(
 
 ```{r}
 #| cache=FALSE
-pkgs <- c("tidyverse", "tidylog", "rTPC", "nls.multstart", "broom", "RColorBrewer", "viridis", "minpack.lm")
+pkgs <- c("tidyverse", "tidylog", "rTPC", "nls.multstart", "broom", "RColorBrewer", "viridis", "minpack.lm", "patchwork")
 
 ## minpack.lm needed if using nlsLM()
 if(length(setdiff(pkgs, rownames(installed.packages()))) > 0){
@@ -43,6 +43,12 @@ invisible(lapply(pkgs, library,character.only = T))
 # devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
 library(ggsidekick)
 theme_set(theme_sleek())
+
+# Check the temperature model script! This is the order based on mean temperature, which makes sense for the sharpe schoolfield plot, and therefore we might keep it across plots
+order <- c("SI_HA", "BT", "TH", "SI_EK", "FM", "VN", "JM", "MU", "FB", "BS", "HO", "RA")
+
+nareas <- length(unique(order))
+colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)
 
 # Load functions
 home <- here::here()
@@ -214,6 +220,7 @@ VBG <- IVBG |>
   group_by(cohort, area) |>
   summarize(k_mean = mean(k, na.rm = T),
             k_median = quantile(k, prob = 0.5, na.rm = T),
+            linf_median = quantile(linf, prob = 0.5, na.rm = T),
             k_lwr = quantile(k, prob = 0.05, na.rm = T),
             k_upr = quantile(k, prob = 0.95, na.rm = T)) |> 
   ungroup()
@@ -281,24 +288,22 @@ d |>
   guides(color = "none") +
   scale_color_viridis(discrete = TRUE, name = "Area", option = "cividis") +
   labs(x = "Age (yrs)", y = "Length (mm)") +
-  facet_wrap(~area)
+  facet_wrap(~factor(area, order))
 
 ggsave(paste0(home, "/figures/vb_fits.pdf" ), width = 17, height = 17, units = "cm")
 
 k <- IVBG |> 
-  ggplot(aes(k, fill = area, color = area)) + 
+  ggplot(aes(k, color = factor(area, order))) + 
   geom_density(alpha = 0.4, fill = NA) +  
-  scale_color_viridis(discrete = TRUE, name = "Area") +
-  #scale_fill_viridis(discrete = TRUE, name = "Area") +
+  scale_color_viridis(discrete = TRUE, name = "Area", direction = -1) +
   coord_cartesian(expand = 0) + 
   guides(color = "none") +
   theme(legend.position = c(0.8, 0.8))
 
 linf <- IVBG |> 
-  ggplot(aes(linf, fill = area, color = area)) + 
+  ggplot(aes(linf, color = factor(area, order))) + 
   geom_density(alpha = 0.4, fill = NA) +  
-  scale_color_viridis(discrete = TRUE, name = "Area") +
-  #scale_fill_viridis(discrete = TRUE, name = "Area") +
+  scale_color_viridis(discrete = TRUE, name = "Area", direction = -1) +
   coord_cartesian(expand = 0, xlim = c(0, 2000)) + 
   theme(legend.position = c(0.9, 0.5))
 
@@ -392,29 +397,6 @@ data.frame(par = names(coef(fit_all)),
 ## Plot Sharpe Schoolfield fits
 
 ```{r}
-# Nice color palette, order based on average temperature!
-nareas <- length(unique(preds$area))
-colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)
-
-# preds <- preds |>
-#   group_by(area) |> 
-#   mutate(mean_temp = mean(temp)) |> 
-#   ungroup() |> 
-#   mutate(area = fct_reorder(area, as.integer(mean_temp)))
-# 
-# preds |> group_by(area) |> summarise(m = mean(temp)) |> arrange(m)
-# 
-# VBG <- VBG |> 
-#   group_by(area) |> 
-#   mutate(mean_temp = mean(temp)) |> 
-#   ungroup() |> 
-#   mutate(area = fct_reorder(area, as.integer(mean_temp)))
-# 
-# VBG |> group_by(area) |> summarise(m = mean(temp)) |> arrange(m)
-
-# Check the temperature model script!
-order <- c("SI_HA", "BT", "TH", "SI_EK", "FM", "VN", "JM", "MU", "FB", "BS", "HO", "RA") 
-
 # Plot growth coefficients by year and area against mean SST
 preds |>
   ggplot(aes(temp, .fitted, color = factor(area, order))) + 
@@ -422,14 +404,128 @@ preds |>
   geom_line(aes(temp, .fitted, group = factor(area)), linewidth = 1) +
   geom_line(data = pred_all, aes(temp, .fitted),
             linewidth = 1, inherit.aes = FALSE, linetype = 2) +
-  scale_color_manual(values = colors, name = "Area") +
+  #scale_color_manual(values = colors, name = "Area") +
+  scale_color_viridis(name = "Area", direction = -1, discrete = TRUE) +
   theme(plot.title = element_text(size = 15, face = "bold")) +
   theme(axis.text.x = element_text(angle = 0)) +
   theme(axis.text = element_text(size = 12), axis.title = element_text(size = 15)) +
   guides(color = guide_legend(override.aes = list(size = 1))) +
   scale_x_continuous(breaks = seq(-5, 20, 1)) +
-  labs(x = "Temperature (C)", y = "Growth rate coefficient") +
+  labs(x = "Temperature (C)", y = "Median von Bertalanffy growth coefficient, k") +
   NULL
 
 ggsave(paste0(home, "/figures/sharpe_school.pdf" ), width = 17, height = 17, units = "cm")
 ```
+
+## Test plotting Linf aswell...
+By area
+
+```{r}
+model <- 'sharpeschoolhigh_1981'
+
+# Get starting values on full dataset for Sharpe-Schoolfield model
+dat <- VBG |>
+  select(linf_median, temp) |>
+  rename(rate = linf_median)
+
+lower <- get_lower_lims(dat$temp, dat$rate, model_name = model)
+upper <- get_upper_lims(dat$temp, dat$rate, model_name = model)
+start <- get_start_vals(dat$temp, dat$rate, model_name = model)
+  
+# Sharpe-Schoolfield model fit to data for each area
+preds <- NULL
+
+for(a in unique(VBG$area)) {
+  
+  # Get data
+  dat <- VBG |> 
+    filter(area == a) |> 
+    select(linf_median, temp, area) |> 
+    rename(rate = linf_median)
+  
+  # Fit model
+  fit <- nls_multstart(
+    rate ~ sharpeschoolhigh_1981(temp = temp, r_tref, e, eh, th, tref = 8),
+    data = dat,
+    iter = c(3, 3, 3, 3),
+    start_lower = start*0.5,
+    start_upper = start*2,
+    lower = lower,
+    upper = upper,
+    supp_errors = 'Y'
+    )
+  
+  # Make predictions on new data
+  new_data <- data.frame(temp = seq(min(dat$temp), max(dat$temp), length.out = 100))
+  
+  pred <- augment(fit, newdata = new_data) |>
+    mutate(area = a)
+  
+  # Add to general data frame
+  preds <- data.frame(rbind(preds, pred))
+  
+}
+```
+
+All areas pooled
+
+```{r}
+# One sharpe schoolfield fitted to all data
+fit_all <- nls_multstart(
+    linf_median ~ sharpeschoolhigh_1981(temp = temp, r_tref, e, eh, th, tref = 8),
+    data = VBG,
+    iter = c(3, 3, 3, 3),
+    start_lower = start*0.5,
+    start_upper = start*2,
+    lower = lower,
+    upper = upper,
+    supp_errors = 'Y'
+    )
+
+# Make predictions on new data
+new_data_all <- data.frame(temp = seq(min(VBG$temp),
+                                      max(VBG$temp),
+                                      length.out = 100))
+
+pred_all <- augment(fit_all, newdata = new_data_all) |> 
+  mutate(area = "all")
+
+# Add t_opt
+# kb <- 8.62e-05
+# data.frame(par = names(coef(fit_all)),
+#            est = coef(fit_all)) |> 
+#   pivot_wider(names_from = par, values_from = est) |> 
+#   summarise(t_opt = (eh*th) / (eh + kb*th*log((eh/e)-1)))
+```
+
+## Plot Sharpe Schoolfield fits
+
+```{r}
+# Nice color palette, order based on average temperature!
+# Plot growth coefficients by year and area against mean SST
+preds |>
+  ggplot(aes(temp, .fitted, color = factor(area, order))) + 
+  geom_point(data = VBG, aes(temp, linf_median, color = factor(area, order)), size = 0.6) +
+  geom_line(aes(temp, .fitted, group = factor(area)), linewidth = 1) +
+  geom_line(data = pred_all, aes(temp, .fitted),
+            linewidth = 1, inherit.aes = FALSE, linetype = 2) +
+  # geom_smooth(aes(temp, .fitted, color = factor(area, order)), 
+  #             method = "gam", formula = y ~ s(x, k = 4)) +
+  # geom_smooth(aes(temp, .fitted), inherit.aes = FALSE,
+  #             method = "gam", formula = y ~ s(x, k = 4), linetype = 2) +
+  #scale_color_manual(values = colors, name = "Area") +
+  scale_color_viridis(name = "Area", direction = -1, discrete = TRUE) +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  theme(axis.text.x = element_text(angle = 0)) +
+  theme(axis.text = element_text(size = 12), axis.title = element_text(size = 15)) +
+  guides(color = guide_legend(override.aes = list(size = 1))) +
+  scale_x_continuous(breaks = seq(-5, 20, 1)) +
+  labs(x = "Temperature (C)", y = "Asymptotic size (mm)") +
+  NULL
+```
+
+```{r}
+ggplot(VBG, aes(linf_median, k_median)) + 
+  geom_point()
+```
+
