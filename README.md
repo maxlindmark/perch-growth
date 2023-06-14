@@ -1,6 +1,6 @@
 # Non-linear growth-temperature relationship leads to opposite response to warming in cold versus warm populations
 
-This repo contains data and R code (Jan, Max) for collating and analyzing time series of back calculated length-at-age data on perch along a latitudinal and thermal gradient in the Baltic Sea (from database KUL: https://www.slu.se/institutioner/akvatiska-resurser/databaser/kul/ and SLU)
+This repo contains data and R code (Jan, Max) for collating and analyzing time series of back calculated length-at-age data on perch along a latitudinal and thermal gradient in the Baltic Sea (from database KUL: https://www.slu.se/institutioner/akvatiska-resurser/databaser/kul/ and SLU). We use [sdmTMB](https://pbs-assess.github.io/sdmTMB/) to fit models with TMB with smooths from mgcv, and [nls.multstart](https://github.com/padpadpadpad/nls.multstart) to fit non-linear models (relating growth to temperature).
 
 With [Anna Gårdmark](https://internt.slu.se/en/cv-originals/anna-gardmark/) and [Jan Ohlberger](http://janohlberger.com/Homepage/)
 
