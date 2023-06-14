@@ -49,7 +49,7 @@ theme_set(theme_sleek())
 ## Read data
 
 ```{r read data}
-d <- readr::read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/for_analysis/dat.csv")
+d <- readr::read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/for-analysis/dat.csv")
 
 glimpse(d)
 

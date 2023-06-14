@@ -59,8 +59,8 @@ invisible(sapply(FUN = source, paste0(home, "/R/functions/", fxn)))
 ## Read and trim data
 
 ```{r}
-d <- #read_csv(paste0(home, "/data/for_analysis/dat.csv")) |> 
-  read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/for_analysis/dat.csv") |> 
+d <- #read_csv(paste0(home, "/data/for-analysis/dat.csv")) |> 
+  read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/for-analysis/dat.csv") |> 
   filter(age_ring == "Y") # use only length-at-age by filtering on age_ring
 
 # Sample size by area and cohort

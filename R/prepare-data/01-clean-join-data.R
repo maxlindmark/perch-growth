@@ -2101,5 +2101,5 @@ unique(d$gear)
 
 d <- d %>% mutate(gear = ifelse(gear == "9.37", 9, gear))
 
-write_csv(d, "data/for_analysis/dat.csv")
+write_csv(d, "data/for-analysis/dat.csv")
 write_csv(d_full, "data/all_dat.csv")

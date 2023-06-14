@@ -54,11 +54,11 @@ invisible(sapply(FUN = source, paste0(home, "/R/functions/", fxn)))
 
 ```{r load and clean temp logger data}
 home <- here::here()
-filenames <- list.files(paste0(home,"/data/temp_data"))
+filenames <- list.files(paste0(home,"/data/temp-data"))
 raw_data <- NULL
 
 for(i in 1:length(filenames)) {
-  dat <- read_excel(paste0(home, "/data/temp_data/", filenames[i]))
+  dat <- read_excel(paste0(home, "/data/temp-data/", filenames[i]))
   if(i == 1) names <- colnames(dat)
   if(i != 1) names(dat) <- names
   area <- substr(filenames[i], 1, 2)
@@ -134,7 +134,7 @@ log_dat %>%
 ## Temperature at fishing
 
 ```{r}
-kul_dat <- read_excel(paste0(home, "/data/temp_data_fishing/temp_at_fishing.xlsx"), skip = 4) |> 
+kul_dat <- read_excel(paste0(home, "/data/temp-data-fishing/temp_at_fishing.xlsx"), skip = 4) |> 
   mutate(Lokal = ifelse(Lokal == "Simpevarp" & Fångstområde == "Ekö", "SI_EK", Lokal),
          Lokal = ifelse(Lokal == "Simpevarp" & Fångstområde == "Hamnefjärden", "SI_HA", Lokal)) |> 
   mutate(area = recode_factor(Lokal,
@@ -170,10 +170,10 @@ ggplot(kul_dat, aes(x = year, y = temp)) +
 
 # Now we need to add in the rest of the data from Firre database
 home <- here::here()
-filenames <- list.files(paste0(home,"/data/temp_data_fishing_firre"))
+filenames <- list.files(paste0(home,"/data/temp-data-fishing-firre"))
 raw_data<-NULL
 for(i in 1:length(filenames)) {
-  dat <- read_excel(paste0(home,"/data/temp_data_fishing_firre/",filenames[i]))
+  dat <- read_excel(paste0(home,"/data/temp-data-fishing-firre/",filenames[i]))
   if(i == 1) names <- colnames(dat)
   if(i != 1) names(dat) <- names
   area <- substr(filenames[i], 1, 2)
@@ -394,6 +394,6 @@ all_temp <- all_temp |>
 
 ```{r}
 # Save data for model fitting
-write_csv(all_temp, paste0(home, "/output/temp-data-for-fitting.csv"))
+write_csv(all_temp, paste0(home, "/output/temp_data_for_fitting.csv"))
 ```
 
