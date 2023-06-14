@@ -45,7 +45,7 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # Check the temperature model script! This is the order based on mean temperature, which makes sense for the sharpe schoolfield plot, and therefore we might keep it across plots
-order <- c("SI_HA", "BT", "TH", "SI_EK", "FM", "VN", "JM", "MU", "FB", "BS", "HO", "RA")
+order <- data.frame(area = c("SI_HA", "BT", "TH", "SI_EK", "FM", "JM", "MU", "FB", "VN", "HO", "BS", "RA")) 
 
 nareas <- length(unique(order))
 colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)
@@ -292,12 +292,12 @@ d |>
   guides(color = "none") +
   scale_color_viridis(discrete = TRUE, name = "Area", option = "cividis") +
   labs(x = "Age (yrs)", y = "Length (mm)") +
-  facet_wrap(~factor(area, order))
+  facet_wrap(~factor(area, order$area))
 
 ggsave(paste0(home, "/figures/vb_fits.pdf" ), width = 17, height = 17, units = "cm")
 
 k <- IVBG |> 
-  ggplot(aes(k, color = factor(area, order))) + 
+  ggplot(aes(k, color = factor(area, order$area))) + 
   geom_density(alpha = 0.4, fill = NA) +  
   scale_color_viridis(discrete = TRUE, name = "Area", direction = -1) +
   coord_cartesian(expand = 0) + 
@@ -305,7 +305,7 @@ k <- IVBG |>
   theme(legend.position = c(0.8, 0.8))
 
 linf <- IVBG |> 
-  ggplot(aes(linf, color = factor(area, order))) + 
+  ggplot(aes(linf, color = factor(area, order$area))) + 
   geom_density(alpha = 0.4, fill = NA) +  
   scale_color_viridis(discrete = TRUE, name = "Area", direction = -1) +
   coord_cartesian(expand = 0, xlim = c(0, 2000)) + 
@@ -403,8 +403,8 @@ data.frame(par = names(coef(fit_all)),
 ```{r}
 # Plot growth coefficients by year and area against mean SST
 preds |>
-  ggplot(aes(temp, .fitted, color = factor(area, order))) + 
-  geom_point(data = VBG, aes(temp, k_median, color = factor(area, order)), size = 0.6) +
+  ggplot(aes(temp, .fitted, color = factor(area, order$area))) + 
+  geom_point(data = VBG, aes(temp, k_median, color = factor(area, order$area)), size = 0.6) +
   geom_line(aes(temp, .fitted, group = factor(area)), linewidth = 1) +
   geom_line(data = pred_all, aes(temp, .fitted),
             linewidth = 1, inherit.aes = FALSE, linetype = 2) +
@@ -508,8 +508,8 @@ pred_all <- augment(fit_all, newdata = new_data_all) |>
 # Nice color palette, order based on average temperature!
 # Plot growth coefficients by year and area against mean SST
 preds |>
-  ggplot(aes(temp, .fitted, color = factor(area, order))) + 
-  geom_point(data = VBG, aes(temp, linf_median, color = factor(area, order)), size = 0.6) +
+  ggplot(aes(temp, .fitted, color = factor(area, order$area))) + 
+  geom_point(data = VBG, aes(temp, linf_median, color = factor(area, order$area)), size = 0.6) +
   geom_line(aes(temp, .fitted, group = factor(area)), linewidth = 1) +
   geom_line(data = pred_all, aes(temp, .fitted),
             linewidth = 1, inherit.aes = FALSE, linetype = 2) +

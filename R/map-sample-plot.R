@@ -33,9 +33,9 @@ swe_coast <- suppressWarnings(suppressMessages(
 utm_zone33 <- 32634
 swe_coast_proj <- sf::st_transform(swe_coast, crs = utm_zone33)
 
-# Add points and use same color palette as in VBGE
+# Add points and use same color palette as in VBGE and temp plot
 # Order for plotting
-order <- data.frame(area = c("SI_HA", "BT", "TH", "SI_EK", "FM", "VN", "JM", "MU", "FB", "BS", "HO", "RA")) 
+order <- data.frame(area = c("SI_HA", "BT", "TH", "SI_EK", "FM", "JM", "MU", "FB", "VN", "HO", "BS", "RA")) 
 
 nareas <- length(order)
 colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)
@@ -72,7 +72,7 @@ p1 <-
   xlim(xmin, xmax) +
   ylim(ymin, ymax) +
   annotate("text", label = "Sweden", x = xmin + 0.23*xrange, y = ymin + 0.6*yrange,
-           color = "black", size = 4) +
+           color = "grey30", size = 4) +
   geom_point(data = df, aes(X, Y, fill = factor(area_name, order$area_name)), size = 3, inherit.aes = FALSE,
              shape = 21, color = "white") +
   guides(color = "none", fill = "none") +

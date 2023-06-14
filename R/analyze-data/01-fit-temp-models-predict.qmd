@@ -166,6 +166,23 @@ nd |>
     labs(x = "Yearday", y = "Year", color = "Predicted SST (°C)", fill = "Predicted SST (°C)")
 ```
 
+Growing season? This might be different for different areas... 
+
+```{r}
+nd |> 
+  filter(growth_dat == "Y") |> 
+  group_by(yday) |> 
+  summarise(mean_pred = mean(pred)) |> 
+  ggplot(aes(yday, mean_pred)) +
+  geom_line() +
+  labs(x = "Yearday", y = "Year", color = "Predicted SST (°C)", fill = "Predicted SST (°C)") + 
+  geom_vline(xintercept = c(yday("2000-05-10"), yday("2000-10-15"))) + 
+  geom_hline(yintercept = 10)
+
+gs_min <- yday("2000-05-10")
+gs_max <- yday("2000-10-15")
+```
+
 Detailed exploration of predictions
 
 ```{r}
@@ -200,13 +217,13 @@ Plot summarized data and predictions
 
 ```{r}
 dsum <- d |> 
-  filter(yday %in% c(yday("2000-03-01"):yday("2000-10-01"))) |> 
+  filter(yday %in% c(gs_min:gs_min)) |> 
   group_by(year, area, source) |> 
   summarise(temp = mean(temp)) |> 
   mutate(type = "data")
 
 preds <- nd |> 
-  filter(growth_dat == "Y" & yday %in% c(yday("2000-03-01"):yday("2000-10-01")) & source == "logger") |> 
+  filter(growth_dat == "Y" & yday %in% c(gs_min:gs_min) & source == "logger") |> 
   group_by(area, year) |> 
   summarise(temp = mean(pred)) |> 
   mutate(type = "model")
@@ -229,7 +246,7 @@ order <- preds |>
 order
 # Save plot order..
 
-topt <- 19.6 # Overall t_opt from 02-fit-vbge.qmd! Update if needed
+topt <- 17.5 # Overall t_opt from 02-fit-vbge.qmd! Update if needed
 
 ggplot(preds, aes(year, temp, color = temp)) + 
   facet_wrap(~factor(area, levels = order$area)) + 
@@ -272,7 +289,7 @@ nd_sim <- left_join(nd_sim, gdat, by = "area")
 nd_sim <- nd_sim |>
   mutate(growth_dat = ifelse(year > min, "Y", "N")) |>
   filter(growth_dat == "Y") |>
-  filter(yday %in% c(yday("2000-05-01"):yday("2000-9-01"))) |>
+  filter(yday %in% c(gs_min:gs_min)) |>
   mutate(area = as.factor(area))
 
 # Predict!
