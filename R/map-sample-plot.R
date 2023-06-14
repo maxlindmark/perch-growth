@@ -35,7 +35,7 @@ swe_coast_proj <- sf::st_transform(swe_coast, crs = utm_zone33)
 
 # Add points and use same color palette as in VBGE
 # Order for plotting
-order <- c("SI_HA", "BT", "TH", "SI_EK", "FM", "VN", "JM", "MU", "FB", "BS", "HO", "RA") 
+order <- data.frame(area = c("SI_HA", "BT", "TH", "SI_EK", "FM", "VN", "JM", "MU", "FB", "BS", "HO", "RA")) 
 
 nareas <- length(order)
 colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)
@@ -43,13 +43,19 @@ colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)
 # Read for sample size per area
 vbg <- read_csv(paste0(home, "/output/vbg.csv"))
 
-df <- data.frame(area = c("Brunskar (BS)", "Biotest (BT)", "Finbo (FB)", "Forsmark (FM)",
-                          "Holmon (HO)", "Kvadofjarden (JM)", "Musko (MU)", "Ranea (RA)",
-                          "Simpevarp 1 (SI_EK", "Simpevarp 2 (SI_HA", "Torhamn (TH)", "Vino (VN)"),
+df <- data.frame(area = c("BS", "BT", "FB", "FM",
+                          "HO", "JM", "MU", "RA",
+                          "SI_EK", "SI_HA", "TH", "VN"),
+                 area_name = c("Brunskär", "Biotest", "Finbo", "Forsmark",
+                               "Holmön", "Kvädofjärden", "Muskö", "Rånea",
+                               "Simpevarp Ek", "Simpevarp Ha", "Torhamn", "Vinö"),
                  lon = c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7, 15.9, 16.9),
                  lat = c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4, 56.1, 57.5))
 
 df <- add_utm_columns(df, ll_names = c("lon", "lat"), units = "m")
+
+# Join in the full area names from df
+order <- left_join(order, df |> select(area, area_name))
 
 # Set plot ranges (crop map)
 xmin <- 0
@@ -59,9 +65,6 @@ ymin <- 6000000
 ymax <- 7500000
 yrange <- ymax - ymin
 
-# df$area <- as.factor(df$area)
-# df$area2 <- factor(df$area, levels = order)
-
 p1 <-
   ggplot(swe_coast_proj) +
   geom_sf() +
@@ -70,24 +73,26 @@ p1 <-
   ylim(ymin, ymax) +
   annotate("text", label = "Sweden", x = xmin + 0.23*xrange, y = ymin + 0.6*yrange,
            color = "black", size = 4) +
-  # geom_point(data = df, aes(X, Y, fill = factor(area, order)), size = 3, inherit.aes = FALSE,
-  #            shape = 21, color = "white") +
-  geom_point(data = df, aes(X, Y, fill = area), size = 3, inherit.aes = FALSE,
-             shape = 21, color = "white") +
-  geom_point(data = df, aes(X, Y, fill = area), size = 3,
+  geom_point(data = df, aes(X, Y, fill = factor(area_name, order$area_name)), size = 3, inherit.aes = FALSE,
              shape = 21, color = "white") +
   guides(color = "none", fill = "none") +
-  geom_label_repel(data = df, aes(X, Y, label = area, color = area), size = 2.5,
-                   min.segment.length = 0, seed = 1, box.padding = 0.4) +
-  scale_fill_viridis(option = "viridis", discrete = TRUE) +
-  scale_color_viridis(option = "viridis", discrete = TRUE) +
+  geom_label_repel(data = df, 
+                   aes(X, Y, label = factor(area_name, order$area_name), color = factor(area_name, order$area_name)),
+                   size = 2.8, min.segment.length = 0, seed = 1, box.padding = 0.55) +
+  scale_fill_viridis(option = "viridis", discrete = TRUE, direction = -1) +
+  scale_color_viridis(option = "viridis", discrete = TRUE, direction = -1) +
   NULL
 
 p1
 
-# here color = factor(area, order) works! but not in the plot above...
-p2 <- ggplot(vbg, aes(cohort, k_median, size = n,
-                      color = area, fill = area)) + 
+
+vbg <- left_join(vbg, order, by = "area")
+
+vbg <- vbg |> mutate(area_full = paste(area_name, paste0("(", area, ")")))
+order <- order |> mutate(area_full = paste(area_name, paste0("(", area, ")")))
+
+p2 <- ggplot(vbg, aes(cohort, k_median, size = n, color = factor(area_full, levels = order$area_full),
+                      fill = factor(area, levels = order$area))) + 
   geom_point(shape = 21, fill = NA, stroke = 0.8) + 
   theme_sleek() + 
   #geom_smooth(se = FALSE, method = "gam", formula = y~s(x, k=4), linewidth = 0.3) +
@@ -95,21 +100,18 @@ p2 <- ggplot(vbg, aes(cohort, k_median, size = n,
          size = guide_legend(override.aes = list(linetype = NA))) +
   labs(x = "Cohort", y = "Median von Bertalanffy growth coefficient, k", size = "#individuals") +
   scale_size(range = c(0.01, 2)) +
-  facet_wrap(~factor(area, levels = order), ncol = 2) + 
+  facet_wrap(~factor(area_full, levels = order$area_full), ncol = 2) + 
   # scale_color_manual(values = colors, name = "Area") +
   # scale_fill_manual(values = colors, name = "Area") +
-  scale_fill_viridis(option = "viridis", discrete = TRUE) +
-  scale_color_viridis(option = "viridis", discrete = TRUE) +
+  scale_fill_viridis(option = "viridis", discrete = TRUE, direction = -1) +
+  scale_color_viridis(option = "viridis", discrete = TRUE, direction = -1) +
   theme(legend.position = c(0.12, 0.07),
         legend.key.height = unit(0.01, 'cm'), 
         legend.text = element_text(size = 6),
-        legend.title = element_text(size = 7),
-        )
+        legend.title = element_text(size = 7))
+
+p2
 
 p1 + p2
   
 ggsave(paste0(home, "/figures/map_sample_size.pdf"), width = 17, height = 17, units = "cm")
-
-## TODO: I'm having trouble setting the order of the colors based on the order vector!
-# It works in p2 (in the # section), i.e., then it assigns hot colors to hot areas etc, 
-# but it doesn't work in the map-plot for some reason...
