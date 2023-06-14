@@ -208,6 +208,10 @@ sample_size <- IVBG |>
             n_individuals = length(unique(ID)),
             n_data_points = n())
 
+sample_size
+
+sample_size |> ungroup() |> summarise(sum_ind = sum(n_individuals), sum_n = sum(n_data_points))
+
 write_csv(sample_size, paste0(home, "/output/sample_size.csv"))
 
 # Compare how the means and quantiles differ depending on this filtering
