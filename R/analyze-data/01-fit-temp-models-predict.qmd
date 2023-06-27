@@ -15,7 +15,9 @@ execute:
   cache: true
 ---
 
-```{r setup, include = FALSE, cache=FALSE}
+```{r setup}
+#| include: false
+#| cache: false
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -29,12 +31,12 @@ knitr::opts_chunk$set(
 
 ```{r libraries and functions}
 #| cache: false
-pkgs <- c("here","tidyverse", "tidylog", "RColorBrewer", "viridis", "sdmTMB", "sdmTMBextra", "patchwork", "RCurl") 
+pkgs <- c("here","tidyverse", "tidylog", "RColorBrewer", "viridis", "sdmTMB", "sdmTMBextra", "patchwork", "RCurl", "tidylog") 
 
 # minpack.lm needed if using nlsLM()
 if(length(setdiff(pkgs,rownames(installed.packages()))) > 0){
 
-    install.packages(setdiff(pkgs,rownames(installed.packages())),dependencies = T)
+    install.packages(setdiff(pkgs, rownames(installed.packages())), dependencies = T)
   
   }
 
@@ -51,38 +53,152 @@ home <- here::here()
 Load cache
 
 ```{r}
-#qwraps2::lazyload_cache_dir(path = paste0(home, "/R/analyze-data/01-fit-temp-models-predict_cache/html"))
+# qwraps2::lazyload_cache_dir(path = paste0(home, "/R/analyze-data/01-fit-temp-models-predict_cache/html"))
 ```
 
 ## Read data
 
 ```{r}
 d <- read_csv(paste0(home, "/output/temp_data_for_fitting.csv"))
-```
 
-## Fit model
-
-```{r}
 d <- d |> mutate(area = as.factor(area),
                  source_f = as.factor(source),
                  year_f = as.factor(year))
 
+# Drop VN, no logger data?
+d |> group_by(area) |> summarise(n_source = length(unique(source_f))) 
+
+# Drop data in SI_HA and BT before onset of warming?
+d2 <- d |>
+  mutate(discard = "N",
+         discard = ifelse(area == "BT" & year <= 1980, "Y", discard),
+         discard = ifelse(area == "SI_HA" & year <= 1972, "Y", discard)) |> 
+  filter(discard == "N")
+```
+
+## Fit models
+Source as independent or interactive effect
+
+```{r}
+#| eval: false
+#| cache: false
+# library(brms)
+# # Too slow...
+# testm <- brm(temp ~ area*year_f + source_f + s(yday, by = area, bs = "cc"), 
+#              data = d |> sample_n(5000),
+#              family = student(),
+#              chains = 2,
+#              cores = 2,
+#              knots = list(yday = c(0.5, 364.5))
+#              )
+# 
+# summary(testm)
+# 
+# detach("package:brms", unload = TRUE)
+# 
+# library(QRM)
+# 
+# fit.st(data = d |> sample_n(500))
+```
+
+```{r}
 m <- sdmTMB(temp ~ area*year_f + source_f + s(yday, by = area, bs = "cc"), 
             data = d,
-            family = student(df = 6),
+            family = student(df = 5),
             spatial = "off",
             spatiotemporal = "off",
             knots = list(yday = c(0.5, 364.5)),
             control = sdmTMBcontrol(newton_loops = 1))
 ```
 
+Try alternative degrees of freedom
+
+```{r}
+#df=20 (effectively gaussian)
+m2 <- sdmTMB(temp ~ area*year_f + source_f + s(yday, by = area, bs = "cc"), 
+            data = d,
+            family = student(df = 20),
+            spatial = "off",
+            spatiotemporal = "off",
+            knots = list(yday = c(0.5, 364.5)),
+            control = sdmTMBcontrol(newton_loops = 1))
+
+# df = 9
+m3 <- sdmTMB(temp ~ area*year_f + source_f + s(yday, by = area, bs = "cc"), 
+            data = d,
+            family = student(df = 9),
+            spatial = "off",
+            spatiotemporal = "off",
+            knots = list(yday = c(0.5, 364.5)),
+            control = sdmTMBcontrol(newton_loops = 1))
+
+# df=4
+m4 <- sdmTMB(temp ~ area*year_f + source_f + s(yday, by = area, bs = "cc"), 
+            data = d,
+            family = student(df = 4),
+            spatial = "off",
+            spatiotemporal = "off",
+            knots = list(yday = c(0.5, 364.5)),
+            control = sdmTMBcontrol(newton_loops = 1))
+
+# Plot all residuals
+mcmc_res <- residuals(m, type = "mle-mcmc",
+                      mcmc_samples = sdmTMBextra::predict_mle_mcmc(m,
+                                                                   mcmc_iter = 201,
+                                                                   mcmc_warmup = 200))
+
+mcmc_res20 <- residuals(m2, type = "mle-mcmc",
+                        mcmc_samples = sdmTMBextra::predict_mle_mcmc(m2,
+                                                                     mcmc_iter = 201,
+                                                                     mcmc_warmup = 200))
+
+mcmc_res9 <- residuals(m3, type = "mle-mcmc",
+                       mcmc_samples = sdmTMBextra::predict_mle_mcmc(m3,
+                                                                    mcmc_iter = 201,
+                                                                    mcmc_warmup = 200))
+
+mcmc_res4 <- residuals(m4, type = "mle-mcmc",
+                       mcmc_samples = sdmTMBextra::predict_mle_mcmc(m4,
+                                                                    mcmc_iter = 201,
+                                                                    mcmc_warmup = 200))
+
+dres <- d |> mutate("df=5" = mcmc_res,
+                    "df=20" = mcmc_res20,
+                    "df=9" = mcmc_res9,
+                    "df=4" = mcmc_res4) |> 
+  select(`df=5`, `df=20`, `df=9`, `df=4`) |> 
+  pivot_longer(everything())
+
+ggplot(dres, aes(sample = value)) +
+  stat_qq(size = 0.75, shape = 21, fill = NA) +
+  facet_wrap(~factor(name, levels = c("df=20", "df=9", "df=5", "df=4"))) +
+  stat_qq_line() +
+  labs(y = "Sample Quantiles", x = "Theoretical Quantiles") + 
+  theme(aspect.ratio = 1)
+```
+
+```{r}
+#| include: false
+#| eval: false
+#| cache: false
+# Doesn't fit! I think it's because some area*year combination have the same errs and no other source; maybe not identifiable?
+# m2 <- sdmTMB(temp ~ area*year_f + area*source_f + s(yday, by = area, bs = "cc"),
+#              data = d |> filter(!area %in% c("BT", "SI_HA")),
+#              family = student(df = 6),
+#              spatial = "off",
+#              spatiotemporal = "off",
+#              knots = list(yday = c(0.5, 364.5)),
+#              control = sdmTMBcontrol(newton_loops = 1))
+```
+
+```{r}
+#AIC(m, m2)
+```
+
 ## Check fit
 
 ```{r}
 sanity(m)
-
-samps <- sdmTMBextra::predict_mle_mcmc(m, mcmc_iter = 201, mcmc_warmup = 200)
-mcmc_res <- residuals(m, type = "mle-mcmc", mcmc_samples = samps)
 
 ggplot(d, aes(sample = mcmc_res)) +
   stat_qq() +
@@ -109,7 +225,7 @@ nd <- data.frame(expand.grid(yday = seq(min(d$yday), max(d$yday), by = 1),
 nd$pred <- predict(m, newdata = nd)$est
 ```
 
-# In order to have a lower temperature in before-nuclear times (without any data to inform that), we can use the nearby areas.. so FM informs BT prior to nuclear
+In order to have a lower temperature in before-nuclear times (without any data to inform that), we can use the nearby areas.. so FM informs BT prior to nuclear
 
 ```{r}
 nd <- nd |> 
@@ -169,18 +285,32 @@ nd |>
 Growing season? This might be different for different areas... 
 
 ```{r}
+# Find day of the year where temperature exceeds 10C by area across years
+gs_area <- nd |> 
+  group_by(area, yday) |> 
+  summarise(mean_pred = mean(pred)) |>
+  ungroup() |> 
+  filter(mean_pred > 10) |> 
+  group_by(area) |> 
+  summarise(gs_min = min(yday),
+            gs_max = max(yday))
+
+nd <- left_join(nd, gs_area, by = "area")
+
+gs_area$mean_pred <- 10
+
+# Plot!
 nd |> 
   filter(growth_dat == "Y") |> 
-  group_by(yday) |> 
+  group_by(area, yday) |> 
   summarise(mean_pred = mean(pred)) |> 
   ggplot(aes(yday, mean_pred)) +
   geom_line() +
   labs(x = "Yearday", y = "Year", color = "Predicted SST (°C)", fill = "Predicted SST (°C)") + 
-  geom_vline(xintercept = c(yday("2000-05-10"), yday("2000-10-15"))) + 
-  geom_hline(yintercept = 10)
-
-gs_min <- yday("2000-05-10")
-gs_max <- yday("2000-10-15")
+  facet_wrap(~area) +
+  geom_point(data = gs_area, aes(gs_min, mean_pred), inherit.aes = FALSE, color = "tomato2") + 
+  geom_point(data = gs_area, aes(gs_max, mean_pred), inherit.aes = FALSE, color = "tomato2") +
+  geom_hline(yintercept = 10, linetype = 2)
 ```
 
 Detailed exploration of predictions
@@ -217,22 +347,68 @@ Plot summarized data and predictions
 
 ```{r}
 dsum <- d |> 
-  filter(yday %in% c(gs_min:gs_min)) |> 
   group_by(year, area, source) |> 
   summarise(temp = mean(temp)) |> 
   mutate(type = "data")
 
 preds <- nd |> 
-  filter(growth_dat == "Y" & yday %in% c(gs_min:gs_min) & source == "logger") |> 
+  filter(growth_dat == "Y" & source == "logger") |> 
   group_by(area, year) |> 
   summarise(temp = mean(pred)) |> 
   mutate(type = "model")
+
+# Now do by growing season instead
+preds_gs <- nd |> 
+  filter(growth_dat == "Y" & source == "logger") |> 
+  filter(yday >= gs_min & yday <= gs_max) |> 
+  group_by(area, year) |> 
+  summarise(temp_gs = mean(pred))
+
+preds <- left_join(preds, preds_gs, by = c("area", "year"))
+
+ggplot(preds, aes(temp, temp_gs, color = area)) + 
+  geom_point()
 
 ggplot(preds, aes(year, temp)) + 
   geom_point(data = dsum, aes(year, temp, color = source), size = 0.75, alpha = 0.75) + 
   scale_color_brewer(palette = "Accent") +
   geom_line(linewidth = 0.5, color = "grey20") + 
   facet_wrap(~area)
+```
+
+Now see if there is a systematic pattern in the difference between predicted and observed logger data, which could indicate that the source effect isn't global but area-specific.
+
+```{r}
+dlog <- d |> 
+  filter(source == "logger") |> 
+  mutate(type = "data",
+         id = paste(area, year, yday, sep = "_")) |> 
+  select(id, temp) |> 
+  group_by(id) |> 
+  summarise(obs = mean(temp)) # sometimes we have more than 1 observation per id
+
+# dlog |> 
+#   group_by(id) |> 
+#   summarise(n = n()) |> 
+#   distinct(n)
+
+preds_log <- nd |> 
+  filter(growth_dat == "Y" & source == "logger") |> 
+  mutate(type = "model",
+         id = paste(area, year, yday, sep = "_")) |> 
+  filter(id %in% unique(dlog$id)) |> 
+  ungroup() |> 
+  left_join(dlog, by = "id")
+
+preds_log |> 
+  mutate(resid = pred - obs) |> 
+  ggplot(aes(as.factor(area), resid, group = as.factor(area))) +
+  #geom_jitter(alpha = 0.05, color = "grey20", height = 0, width = 0.2) + 
+  geom_violin(fill = "grey70", color = NA) +
+  geom_boxplot(width = 0.2, outlier.colour = NA, outlier.color = NA, outlier.fill = NA) +
+  guides(color = "none") +
+  geom_hline(yintercept = 0, linetype = 2, color = "tomato3", linewidth = 0.75) + 
+  labs(x = "Area", y = "Manual residuals")
 ```
 
 Make final plot
@@ -246,13 +422,22 @@ order <- preds |>
 order
 # Save plot order..
 
-topt <- 17.5 # Overall t_opt from 02-fit-vbge.qmd! Update if needed
+topt <- 10.6 # Overall t_opt from 02-fit-vbge.qmd! Update if needed
+
+# Add latitude
+area <- c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA", "SI_EK", "SI_HA", "TH", "VN")
+nareas <- length(area)
+lat <- c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4, 56.1, 57.5)
+lon <- c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7, 15.9, 16.9)
+area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) |>
+  mutate_at(c("lat","lon"), as.numeric) |> 
+  arrange(desc(lat))
 
 ggplot(preds, aes(year, temp, color = temp)) + 
-  facet_wrap(~factor(area, levels = order$area)) + 
+  facet_wrap(~factor(area, levels = area_attr$area), ncol = 3) + 
   geom_hline(yintercept = topt, linewidth = 0.3, linetype = 2, color = "grey") +
   geom_line() +
-  labs(x = "Year", y = "Model predicted average growing season temperature") + 
+  labs(x = "Year", y = "Model-predicted annual average temperature") + 
   scale_color_viridis(option = "magma", name = "Area") +
   guides(color = "none") 
 
@@ -262,12 +447,11 @@ preds |>
             max = max(year)) |> 
   arrange(min)
 
-ggsave(paste0(home, "/figures/growing_season_temp.pdf"), width = 17, height = 17, units = "cm")
+ggsave(paste0(home, "/figures/annual_average_temperature.pdf"), width = 17, height = 17, units = "cm")
 ```
 
 ```{r}
 # Save prediction df
-
 write_csv(preds, paste0(home, "/output/gam_predicted_temps.csv"))
 ```
 
@@ -297,7 +481,7 @@ nsim <- 500
 m_pred_sims <- predict(m, newdata = nd_sim, nsim = nsim)
 
 # Join sims with prediction data
-nd_sim_long <- cbind(nd_sim, as.data.frame(m_pred_sims)) %>%
+nd_sim_long <- cbind(nd_sim, as.data.frame(m_pred_sims)) |>
     pivot_longer(c((ncol(nd_sim) + 1):(nsim + ncol(nd_sim))))
 
 # Summarize sims over growing season

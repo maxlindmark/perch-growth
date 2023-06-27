@@ -34,21 +34,20 @@ utm_zone33 <- 32634
 swe_coast_proj <- sf::st_transform(swe_coast, crs = utm_zone33)
 
 # Add points and use same color palette as in VBGE and temp plot
-# Order for plotting
-order <- data.frame(area = c("SI_HA", "BT", "TH", "SI_EK", "FM", "JM", "MU", "FB", "VN", "HO", "BS", "RA")) 
+# Order for plotting colors
+order <- data.frame(area = c("SI_HA", "BT", "TH", "VN", "SI_EK", "FM", "JM", "BS", "MU", "FB", "HO", "RA")) 
 
-nareas <- length(order)
-colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)
+nareas <- length(unique(order$area)) + 1
+colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(7)]
 
 # Read for sample size per area
 vbg <- read_csv(paste0(home, "/output/vbg.csv"))
 
-df <- data.frame(area = c("BS", "BT", "FB", "FM",
-                          "HO", "JM", "MU", "RA",
+df <- data.frame(area = c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA",
                           "SI_EK", "SI_HA", "TH", "VN"),
-                 area_name = c("Brunskär", "Biotest", "Finbo", "Forsmark",
+                 area_name = c("Brunskär", "Biotest*", "Finbo", "Forsmark",
                                "Holmön", "Kvädofjärden", "Muskö", "Rånea",
-                               "Simpevarp Ek", "Simpevarp Ha", "Torhamn", "Vinö"),
+                               "Simpevarp Ek", "Simpevarp Ha*", "Torhamn", "Vinö"),
                  lon = c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7, 15.9, 16.9),
                  lat = c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4, 56.1, 57.5))
 
@@ -79,36 +78,40 @@ p1 <-
   geom_label_repel(data = df, 
                    aes(X, Y, label = factor(area_name, order$area_name), color = factor(area_name, order$area_name)),
                    size = 2.8, min.segment.length = 0, seed = 1, box.padding = 0.55) +
-  scale_fill_viridis(option = "viridis", discrete = TRUE, direction = -1) +
-  scale_color_viridis(option = "viridis", discrete = TRUE, direction = -1) +
+  scale_color_manual(values = colors, name = "Area") +
+  scale_fill_manual(values = colors, name = "Area") +
+  # scale_fill_viridis(option = "viridis", discrete = TRUE, direction = -1) +
+  # scale_color_viridis(option = "viridis", discrete = TRUE, direction = -1) +
   NULL
 
 p1
-
 
 vbg <- left_join(vbg, order, by = "area")
 
 vbg <- vbg |> mutate(area_full = paste(area_name, paste0("(", area, ")")))
 order <- order |> mutate(area_full = paste(area_name, paste0("(", area, ")")))
+df <- df |> mutate(area_full = paste(area_name, paste0("(", area, ")")))
+
+order_facet <- df |> arrange(desc(lat))
 
 p2 <- ggplot(vbg, aes(cohort, k_median, size = n, color = factor(area_full, levels = order$area_full),
                       fill = factor(area, levels = order$area))) + 
-  geom_point(shape = 21, fill = NA, stroke = 0.8) + 
+  #geom_point(shape = 21, fill = NA, stroke = 0.8) + 
+  geom_point() +
   theme_sleek() + 
   #geom_smooth(se = FALSE, method = "gam", formula = y~s(x, k=4), linewidth = 0.3) +
   guides(fill = "none", color = "none", 
          size = guide_legend(override.aes = list(linetype = NA))) +
-  labs(x = "Cohort", y = "Median von Bertalanffy growth coefficient, k", size = "#individuals") +
-  scale_size(range = c(0.01, 2)) +
-  facet_wrap(~factor(area_full, levels = order$area_full), ncol = 2) + 
-  # scale_color_manual(values = colors, name = "Area") +
-  # scale_fill_manual(values = colors, name = "Area") +
-  scale_fill_viridis(option = "viridis", discrete = TRUE, direction = -1) +
-  scale_color_viridis(option = "viridis", discrete = TRUE, direction = -1) +
-  theme(legend.position = c(0.12, 0.07),
+  labs(x = "Cohort", y = "Median von Bertalanffy growth coefficient (*k*)", size = "#individuals") +
+  scale_size(range = c(0.01, 2.5)) +
+  facet_wrap(~factor(area_full, levels = order_facet$area_full), ncol = 2) + 
+  scale_color_manual(values = colors, name = "Area") +
+  scale_fill_manual(values = colors, name = "Area") +
+  theme(legend.position = c(0.65, 0.07),
         legend.key.height = unit(0.01, 'cm'), 
         legend.text = element_text(size = 6),
-        legend.title = element_text(size = 7))
+        legend.title = element_text(size = 7),
+        axis.title.y = ggtext::element_markdown())
 
 p2
 
