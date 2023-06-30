@@ -327,6 +327,20 @@ k <- IVBG |>
   geom_rug(data = rugs, aes(median_k)) +
   theme(legend.position = c(0.9, 0.5))
 
+# violons instead?
+k2 <- IVBG |> 
+  ggplot(aes(factor(area, order$area), k, fill = factor(area, order$area))) + 
+  geom_violin(alpha = 0.8, draw_quantiles = 0.5) +  
+  # geom_boxplot(outlier.color = NA, width = 0.2, alpha = 0.8, fill = NA, size = 0.4) +
+  # geom_jitter(data = IVBG |> group_by(area) |> slice_sample(n = 1000),
+  #             aes(factor(area, order$area), k), height = 0, width = 0.2, alpha = 0.06,
+  #             color = "grey40") +
+  scale_fill_manual(values = colors, name = "Area") +
+  guides(fill = "none", color = "none") +
+  labs(x = "", y = expression(italic(k)))
+
+k2
+
 linf <- IVBG |> 
   ggplot(aes(linf, color = factor(area, order$area))) + 
   geom_density(alpha = 0.4, fill = NA, adjust = 1.5) +  
@@ -336,9 +350,23 @@ linf <- IVBG |>
   geom_rug(data = rugs, aes(median_linf)) +
   guides(color = "none")
 
-k / linf
+linf2 <- IVBG |> 
+  ggplot(aes(factor(area, order$area), linf, fill = factor(area, order$area))) + 
+  geom_violin(alpha = 0.8, draw_quantiles = 0.5) +  
+  coord_cartesian(expand = 0, ylim = c(0, 2000)) + 
+  # geom_boxplot(outlier.color = NA, width = 0.2, alpha = 0.8, fill = NA, size = 0.4) +
+  # geom_jitter(data = IVBG |> group_by(area) |> slice_sample(n = 1000),
+  #             aes(factor(area, order$area), linf), height = 0, width = 0.2, alpha = 0.06,
+  #             color = "grey40") +
+  scale_fill_manual(values = colors, name = "Area") +
+  guides(fill = "none", color = "none") +
+  labs(x = "", y = expression(paste(italic(L[infinity]), " [cm]")))
+linf2
 
-ggsave(paste0(home, "/figures/vb_pars.pdf" ), width = 17, height = 17, units = "cm")
+k / linf
+k2 / linf2
+
+ggsave(paste0(home, "/figures/vb_pars2.pdf" ), width = 17, height = 17, units = "cm")
 ```
 
 ## Fit Sharpe-Schoolfield model to K
@@ -449,12 +477,12 @@ ggsave(paste0(home, "/figures/sharpe_school.pdf" ), width = 17, height = 17, uni
 knitr::knit_exit()
 ```
 
-
 ### Temperature in growing season instead of all year average
 #### Fit Sharpe-Schoolfield model to K
 By area
 
 ```{r}
+#| eval: false
 model <- 'sharpeschoolhigh_1981'
 
 # Get starting values on full dataset for Sharpe-Schoolfield model
@@ -502,6 +530,7 @@ for(a in unique(dat2$area)) {
 All areas pooled
 
 ```{r}
+#| eval: false
 # One sharpe schoolfield fitted to all data
 fit_all2 <- nls_multstart(
     rate ~ sharpeschoolhigh_1981(temp = temp, r_tref, e, eh, th, tref = 8),
@@ -530,6 +559,8 @@ data.frame(par = names(coef(fit_all2)), est = coef(fit_all2)) |>
 ## Plot Sharpe Schoolfield fits
 
 ```{r}
+#| eval: false
+
 # Plot growth coefficients by year and area against mean SST
 preds2 |>
   ggplot(aes(temp, .fitted, color = factor(area, order$area))) + 
@@ -548,6 +579,8 @@ preds2 |>
 By area
 
 ```{r}
+#| eval: false
+
 model <- 'sharpeschoolhigh_1981'
 
 # Get starting values on full dataset for Sharpe-Schoolfield model
@@ -594,6 +627,9 @@ for(a in unique(dat3$area)) {
 All areas pooled
 
 ```{r}
+#| eval: false
+
+
 # One sharpe schoolfield fitted to all data
 fit_all3 <- nls_multstart(
     rate ~ sharpeschoolhigh_1981(temp = temp, r_tref, e, eh, th, tref = 8),
@@ -616,6 +652,8 @@ pred_all3 <- augment(fit_all3, newdata = new_data_all3) |>
 ## Plot Sharpe Schoolfield fits
 
 ```{r}
+#| eval: false
+
 # Plot growth coefficients by year and area against mean SST
 preds3 |>
   ggplot(aes(temp, .fitted, color = factor(area, order$area))) + 
@@ -631,6 +669,8 @@ preds3 |>
 ```
 
 ```{r}
+#| eval: false
+
 ggplot(VBG, aes(linf_median, k_median)) + 
   geom_point()
 ```
