@@ -2101,5 +2101,15 @@ unique(d$gear)
 
 d <- d %>% mutate(gear = ifelse(gear == "9.37", 9, gear))
 
+# Finally, filter size-at-age data to not include forsmark or biotest after 2004...
+
+d <- d |> 
+  mutate(keep = ifelse(area %in% c("FM", "BT") & catch_year > 2004, "N", "Y")) |> 
+  filter(keep == "Y")
+
+d_full <- d_full |> 
+  mutate(keep = ifelse(area %in% c("FM", "BT") & catch_year > 2004, "N", "Y")) |> 
+  filter(keep == "Y")
+
 write_csv(d, "data/for-analysis/dat.csv")
 write_csv(d_full, "data/all_dat.csv")

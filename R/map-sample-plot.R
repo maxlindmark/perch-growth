@@ -15,7 +15,7 @@ library(ggsidekick);theme_set(theme_sleek())
 
 home <- here::here()
 
-## BIG map
+## Big map
 # Specify ranges for big map
 ymin = 53; ymax = 69; xmin = 5; xmax = 36
 
@@ -29,27 +29,27 @@ swe_coast <- suppressWarnings(suppressMessages(
   st_crop(map_data,
           c(xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax))))
 
-# Transform our map into UTM 33 coordinates, which is the equal-area projection we fit in:
+# Transform our map into UTM 33 coordinates, which is the equal-area projection we are (mainly) in
 utm_zone33 <- 32634
 swe_coast_proj <- sf::st_transform(swe_coast, crs = utm_zone33)
 
 # Add points and use same color palette as in VBGE and temp plot
-# Order for plotting colors
-order <- data.frame(area = c("SI_HA", "BT", "TH", "VN", "SI_EK", "FM", "JM", "BS", "MU", "FB", "HO", "RA")) 
+# Order for plotting colors (see temperature fitting script!)
+order <- data.frame(area = c("SI_HA", "BT", "TH", "FM", "JM", "BS", "SI_EK", "FB", "MU", "RA", "HO")) 
 
-nareas <- length(unique(order$area)) + 1
-colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(7)]
+nareas <- length(unique(order$area)) + 2 # to skip the brightest colors
+colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(7,8)]
 
 # Read for sample size per area
-vbg <- read_csv(paste0(home, "/output/vbg.csv"))
+vbg <- read_csv(paste0(home, "/output/vbg.csv")) |> filter(!area == "VN")
 
 df <- data.frame(area = c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA",
-                          "SI_EK", "SI_HA", "TH", "VN"),
+                          "SI_EK", "SI_HA", "TH"),
                  area_name = c("Brunskär", "Biotest*", "Finbo", "Forsmark",
                                "Holmön", "Kvädofjärden", "Muskö", "Rånea",
-                               "Simpevarp Ek", "Simpevarp Ha*", "Torhamn", "Vinö"),
-                 lon = c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7, 15.9, 16.9),
-                 lat = c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4, 56.1, 57.5))
+                               "Simpevarp Ek", "Simpevarp Ha*", "Torhamn"),
+                 lon = c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7, 15.9),
+                 lat = c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4, 56.1))
 
 df <- add_utm_columns(df, ll_names = c("lon", "lat"), units = "m")
 
@@ -80,8 +80,6 @@ p1 <-
                    size = 2.8, min.segment.length = 0, seed = 1, box.padding = 0.55) +
   scale_color_manual(values = colors, name = "Area") +
   scale_fill_manual(values = colors, name = "Area") +
-  # scale_fill_viridis(option = "viridis", discrete = TRUE, direction = -1) +
-  # scale_color_viridis(option = "viridis", discrete = TRUE, direction = -1) +
   NULL
 
 p1
@@ -117,4 +115,4 @@ p2
 
 p1 + p2
   
-ggsave(paste0(home, "/figures/map_sample_size.pdf"), width = 17, height = 17, units = "cm")
+ggsave(paste0(home, "/figures/map_sample_size2.pdf"), width = 17, height = 17, units = "cm")

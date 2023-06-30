@@ -19,7 +19,7 @@ execute:
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 12,
+  fig.width = 8,
   fig.asp = 0.618,
   fig.align ='center'
 )
@@ -45,10 +45,10 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # Check the temperature model script! This is the order based on mean temperature, which makes sense for the sharpe schoolfield plot, and therefore we might keep it across plots
-order <- data.frame(area = c("SI_HA", "BT", "TH", "VN", "SI_EK", "FM", "JM", "BS", "MU", "FB", "HO", "RA")) 
+order <- data.frame(area = c("SI_HA", "BT", "TH", "FM", "JM", "BS", "SI_EK", "FB", "MU", "RA", "HO")) 
 
-nareas <- length(unique(order$area)) + 1
-colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(7)]
+nareas <- length(unique(order$area)) + 2 # to skip the brightest colors
+colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(7,8)]
 
 # Load functions
 home <- here::here()
@@ -67,7 +67,8 @@ Load cache
 ```{r}
 d <- #read_csv(paste0(home, "/data/for-analysis/dat.csv")) |> 
   read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/for-analysis/dat.csv") |> 
-  filter(age_ring == "Y") # use only length-at-age by filtering on age_ring
+  filter(age_ring == "Y", # use only length-at-age by filtering on age_ring
+         !area == "VN") 
 
 # Sample size by area and cohort
 ns <- d |> 
@@ -352,6 +353,9 @@ dat <- VBG |>
   select(k_median, temp, area) |>
   rename(rate = k_median)
 
+# TODO: fix NA temp?
+dat <- dat |> drop_na(temp)
+
 lower <- get_lower_lims(dat$temp, dat$rate, model_name = model)
 upper <- get_upper_lims(dat$temp, dat$rate, model_name = model)
 start <- get_start_vals(dat$temp, dat$rate, model_name = model)
@@ -436,10 +440,15 @@ p1 + facet_wrap(~factor(area, levels = (arrange(area_attr, desc(lat)))$area))
   
 p1
 
-ggsave(paste0(home, "/figures/sharpe_school.pdf" ), width = 15, height = 15, units = "cm")
+ggsave(paste0(home, "/figures/sharpe_school.pdf" ), width = 17, height = 17, units = "cm")
 ```
 
 ## Extra analysis
+
+```{r}
+knitr::knit_exit()
+```
+
 
 ### Temperature in growing season instead of all year average
 #### Fit Sharpe-Schoolfield model to K
