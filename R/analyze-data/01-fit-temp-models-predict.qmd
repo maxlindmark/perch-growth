@@ -4,28 +4,18 @@ author: "Max Lindmark, Jan Ohlberger, Anna Gårdmark"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 format: 
   html:
-    code-fold: true
     embed-resources: true
-    fig-width: 12
-    fig-height: 10
+    fig-width: 8
+    #fig-asp: 0.618
+knitr: 
+  opts_chunk:
+    fig.align: center
 editor: source
 execute: 
   echo: true
   eval: true
   cache: true
 ---
-
-```{r setup}
-#| include: false
-#| cache: false
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.width = 8,
-  fig.asp = 0.618,
-  fig.align ='center'
-)
-```
 
 ## Load libraries
 
@@ -72,9 +62,7 @@ gdat$area_cohort_age <- as.factor(paste(gdat$area, gdat$cohort, gdat$age_bc))
 
 gdat <- gdat |>
   group_by(area_cohort_age) |> 
-  filter(n() > 10)
-
-gdat <- gdat |> 
+  filter(n() > 10) |> 
   filter(age_catch > 3) |> 
   group_by(area) |>
   summarise(min = min(cohort),
@@ -85,12 +73,15 @@ d <- left_join(d, gdat, by = "area") |>
   mutate(area = as.factor(area),
          growth_dat = ifelse(year >= min & year <= max, "Y", "N"))
 
-# Drop data in SI_HA and BT before onset of warming?
-d2 <- d |>
+# Drop data in SI_HA and BT before onset of warming
+d <- d |>
   mutate(discard = "N",
          discard = ifelse(area == "BT" & year <= 1980, "Y", discard),
          discard = ifelse(area == "SI_HA" & year <= 1972, "Y", discard)) |> 
   filter(discard == "N")
+
+# Drop heated areas actually for the full plot
+df <- d |> filter(!area %in% c("BT", "SI_HA"))
 ```
 
 ## Fit models
@@ -98,7 +89,7 @@ Source as independent or interactive effect
 
 ```{r}
 m <- sdmTMB(temp ~ area*year_f + source_f + s(yday, by = area, bs = "cc"), 
-            data = d,
+            data = df,
             family = student(df = 5),
             spatial = "off",
             spatiotemporal = "off",
@@ -106,8 +97,8 @@ m <- sdmTMB(temp ~ area*year_f + source_f + s(yday, by = area, bs = "cc"),
             control = sdmTMBcontrol(newton_loops = 1))
 ```
 
-Try alternative degrees of freedom
-*not evaluated*
+Try alternative degrees of freedom (_not evaluated_)
+
 ```{r}
 #| eval: false
 
@@ -159,10 +150,10 @@ mcmc_res4 <- residuals(m4, type = "mle-mcmc",
                                                                     mcmc_iter = 201,
                                                                     mcmc_warmup = 200))
 
-dres <- d |> mutate("df=5" = mcmc_res,
-                    "df=20" = mcmc_res20,
-                    "df=9" = mcmc_res9,
-                    "df=4" = mcmc_res4) |> 
+dres <- df |> mutate("df=5" = mcmc_res,
+                     "df=20" = mcmc_res20,
+                     "df=9" = mcmc_res9,
+                     "df=4" = mcmc_res4) |> 
   select(`df=5`, `df=20`, `df=9`, `df=4`) |> 
   pivot_longer(everything())
 
@@ -184,7 +175,7 @@ mcmc_res <- residuals(m, type = "mle-mcmc",
                                                                    mcmc_iter = 201,
                                                                    mcmc_warmup = 200))
 
-ggplot(d, aes(sample = mcmc_res)) +
+ggplot(df, aes(sample = mcmc_res)) +
   stat_qq() +
   stat_qq_line() +
   labs(y = "Sample Quantiles", x = "Theoretical Quantiles") + 
@@ -193,19 +184,16 @@ ggplot(d, aes(sample = mcmc_res)) +
 ggsave(paste0(home, "/figures/supp/full_model/qq_temp.pdf"), width = 11, height = 11, units = "cm")
 
 summary(m)
-
-unique(d$area)
-unique(d$source_f)
 ```
 
 ## Predict
 
 ```{r predict}
 # Make a new data frame and predict!
-nd <- data.frame(expand.grid(yday = seq(min(d$yday), max(d$yday), by = 1),
-                             area = unique(d$area),
-                             source = unique(d$source_f),
-                             year = unique(d$year))) |>
+nd <- data.frame(expand.grid(yday = seq(min(df$yday), max(df$yday), by = 1),
+                             area = unique(df$area),
+                             source = unique(df$source_f),
+                             year = unique(df$year))) |>
   mutate(source_f = as.factor(source),
          year_f = as.factor(year)) |> # Left join in growth data column
   left_join(gdat, by = "area") |> 
@@ -219,24 +207,17 @@ nd$pred <- predict(m, newdata = nd)$est
 In order to have a lower temperature in before-nuclear times (without any data to inform that), we can use the nearby areas.. so FM informs BT prior to nuclear
 
 ```{r}
-nd <- nd |> 
-  mutate(keep = "Y",
-         keep = ifelse(area == "BT" & year < 1980, "N", keep),
-         keep = ifelse(area == "SI_HA" & year < 1972, "N", keep)) |>
-  filter(keep == "Y")
-  
 nd_sub <- nd |> 
   mutate(keep = "N",
-         keep = ifelse(area == "FM" & year < 1980, "Y", keep), # use FM instead of BT
-         keep = ifelse(area == "SI_EK" & year < 1972, "Y", keep)) |> # use SI_EK instead of SI_HA
-  filter(keep == "Y")
-
-# Now change the labels to BT and SI_EK...
-nd_sub <- nd_sub |> 
+         keep = ifelse(area == "FM" & year <= 1980, "Y", keep), # use FM instead of BT
+         keep = ifelse(area == "SI_EK" & year <= 1972, "Y", keep)) |> # use SI_EK instead of SI_HA
+  filter(keep == "Y") |> # Now change the labels to BT and SI_EK...
   mutate(area = ifelse(area == "FM", "BT", "SI_HA"))
 
 # Bind rows and plot only the temperature series we will use for growth modelling
-nd <- bind_rows(nd, nd_sub) |> select(-keep)
+nd <- bind_rows(nd, nd_sub) |>
+  select(-keep) |> 
+  mutate(growth_dat = ifelse(area == "SI_HA" & year %in% c(1966, 1967), "Y", growth_dat)) # SI_EK and SI_HA do not have the same starting years, so we can't use allo columns from SI_EK
 ```
 
 ## Plot predictions
@@ -304,13 +285,28 @@ for(i in unique(dspec$area)) {
   
   dd <- dspec |> filter(area == i)
 
-  mspec <- sdmTMB(temp ~ 0 + source_f + year_f + s(yday, bs = "cc"), 
-                 data = dd,
-                 family = student(df = 8),
-                 spatial = "off",
-                 spatiotemporal = "off",
-                 knots = list(yday = c(0.5, 364.5)),
-                 control = sdmTMBcontrol(newton_loops = 1))
+  if(unique(dd$area) %in% c("BS", "BT", "FB", "FM", "MU", "SI_EK", "TH")) { # RA, JM, HO, SI_HA remains
+    
+    mspec <- sdmTMB(temp ~ 0 + source_f + year_f + s(yday, bs = "cc"), 
+                    data = dd,
+                    family = student(df = 6),
+                    spatial = "off",
+                    spatiotemporal = "off",
+                    knots = list(yday = c(0.5, 364.5)),
+                    control = sdmTMBcontrol(newton_loops = 1)) 
+  
+  } else {
+    
+    mspec <- sdmTMB(temp ~ 0 + source_f + year_f + s(yday, bs = "cc"), 
+                    data = dd,
+                    family = student(df = 10),
+                    spatial = "off",
+                    spatiotemporal = "off",
+                    knots = list(yday = c(0.5, 364.5)),
+                    control = sdmTMBcontrol(newton_loops = 1)) 
+    
+  }
+  
   
   sanity(mspec)
 
@@ -349,25 +345,17 @@ for(i in unique(dspec$area)) {
 nd_area <- dplyr::bind_rows(spec_preds)
 
 # In order to have a lower temperature in before-nuclear times (without any data to inform that), we can use the nearby areas.. so FM informs BT prior to nuclear
-
-nd_area <- nd_area |> 
-  mutate(keep = "Y",
-         keep = ifelse(area == "BT" & year < 1980, "N", keep),
-         keep = ifelse(area == "SI_HA" & year < 1972, "N", keep)) |>
-  filter(keep == "Y")
-  
 nd_area_sub <- nd_area |> 
   mutate(keep = "N",
-         keep = ifelse(area == "FM" & year < 1980, "Y", keep), # use FM instead of BT
-         keep = ifelse(area == "SI_EK" & year < 1972, "Y", keep)) |> # use SI_EK instead of SI_HA
-  filter(keep == "Y")
-
-# Now change the labels to BT and SI_EK...
-nd_area_sub <- nd_area_sub |> 
+         keep = ifelse(area == "FM" & year <= 1980, "Y", keep), # use FM instead of BT
+         keep = ifelse(area == "SI_EK" & year <= 1972, "Y", keep)) |> # use SI_EK instead of SI_HA
+  filter(keep == "Y") |> # Now change the labels to BT and SI_EK...
   mutate(area = ifelse(area == "FM", "BT", "SI_HA"))
 
 # Bind rows and plot only the temperature series we will use for growth modelling
-nd_area <- bind_rows(nd_area, nd_area_sub) |> select(-keep)
+nd_area <- bind_rows(nd_area, nd_area_sub) |>
+  select(-keep) |> 
+  mutate(growth_dat = ifelse(area == "SI_HA" & year %in% c(1966, 1967), "Y", growth_dat)) # SI_EK and SI_HA do not have the same starting years, so we can't use allo columns from SI_EK
 
 nd_area |> 
   filter(area %in% c("FM", "BT", "SI_EK", "SI_HA")) |> 
@@ -470,7 +458,7 @@ for(i in unique(diff_pred$area)) {
   
   plotdat <- diff_pred |> filter(area == i)
   
-  print(ggplot(diff_pred, aes(yday, value, color = name)) + 
+  print(ggplot(plotdat, aes(yday, value, color = name)) + 
       facet_wrap(~year) +  
       scale_color_brewer(palette = "Dark2") + 
       geom_hline(yintercept = 0, linetype = 2, alpha = 0.5) + 
@@ -516,15 +504,10 @@ ggplot(preds_comb, aes(year, temp, color = source, linetype = model)) +
 Make final plot using the area-specific model
 
 ```{r}
-order <- preds_area |>
-  group_by(area) |> 
-  summarise(mean_temp = mean(temp)) |> 
-  arrange(desc(mean_temp))
-
-order
-# Save plot order..
-
-topt <- 11.8 # Overall t_opt from 02-fit-vbge.qmd! Update if needed
+# Overall t_opt from 02-fit-vbge.qmd! Update when I got final model!
+topt_lwr <- 3.76
+topt <- 6.10
+topt_upr <- 10.1
 
 # Add latitude
 area <- c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA", "SI_EK", "SI_HA", "TH")
@@ -537,7 +520,9 @@ area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) |>
 
 ggplot(preds_area, aes(year, temp, color = temp)) + 
   facet_wrap(~factor(area, levels = area_attr$area), ncol = 3) + 
-  geom_hline(yintercept = topt, linewidth = 0.3, linetype = 2, color = "grey") +
+  geom_hline(yintercept = topt_lwr, linewidth = 0.3, linetype = 2, color = "tomato3", alpha = 0.3) +
+  geom_hline(yintercept = topt, linewidth = 0.3, linetype = 1, color = "tomato3", alpha = 0.3) +
+  geom_hline(yintercept = topt_upr, linewidth = 0.3, linetype = 2, color = "tomato3", alpha = 0.3) +
   geom_line() +
   labs(x = "Year", y = "Model-predicted annual average temperature") + 
   scale_color_viridis(option = "magma", name = "Area") +
@@ -554,14 +539,8 @@ ggsave(paste0(home, "/figures/annual_average_temperature.pdf"), width = 17, heig
 
 ```{r}
 # Save prediction df
-write_csv(preds, paste0(home, "/output/gam_predicted_temps.csv"))
+write_csv(preds_area, paste0(home, "/output/gam_predicted_temps.csv"))
 ```
-
-
-
-
-
-
 
 Code below is not evaluated!
 

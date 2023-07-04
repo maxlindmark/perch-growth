@@ -4,10 +4,12 @@ author: "Max Lindmark, Jan Ohlberger, Anna Gårdmark"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 format: 
   html:
-    code-fold: true
     embed-resources: true
-    fig-width: 12
-    fig-height: 10
+    fig-width: 8
+    #fig-asp: 0.618
+knitr: 
+  opts_chunk:
+    fig.align: center
 editor: source
 execute: 
   echo: true
@@ -15,23 +17,14 @@ execute:
   cache: true
 ---
 
-```{r setup, include = FALSE, cache=FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.width = 8,
-  fig.asp = 0.618,
-  fig.align ='center'
-)
-```
-
 ## Load libraries
 
 ```{r}
-#| cache=FALSE
-pkgs <- c("tidyverse", "tidylog", "rTPC", "nls.multstart", "broom", "RColorBrewer", "viridis", "minpack.lm", "patchwork", "ggtext")
+#| cache: false
+pkgs <- c("tidyverse", "tidylog", "rTPC", "nls.multstart", "broom", "RColorBrewer", 
+          "viridis", "minpack.lm", "patchwork", "ggtext", "brms", "tidybayes", "modelr")
 
-## minpack.lm needed if using nlsLM()
+# minpack.lm needed if using nlsLM()
 if(length(setdiff(pkgs, rownames(installed.packages()))) > 0){
 
     install.packages(setdiff(pkgs, rownames(installed.packages())), dependencies = T)
@@ -43,12 +36,6 @@ invisible(lapply(pkgs, library,character.only = T))
 # devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
 library(ggsidekick)
 theme_set(theme_sleek())
-
-# Check the temperature model script! This is the order based on mean temperature, which makes sense for the sharpe schoolfield plot, and therefore we might keep it across plots
-order <- data.frame(area = c("SI_HA", "BT", "TH", "FM", "JM", "BS", "SI_EK", "FB", "MU", "RA", "HO")) 
-
-nareas <- length(unique(order$area)) + 2 # to skip the brightest colors
-colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(7,8)]
 
 # Load functions
 home <- here::here()
@@ -108,12 +95,12 @@ ggplot(d, aes(age_bc, length_mm)) +
   facet_wrap(~area, scale = "free_x")
 
 # Longitude and latitude attributes for each area
-area <- c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA", "SI_EK", "SI_HA", "TH", "VN")
+area <- c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA", "SI_EK", "SI_HA", "TH")
 nareas <- length(area)
-lat <- c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4, 56.1, 57.5)
-lon <- c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7, 15.9, 16.9)
+lat <- c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4, 56.1)
+lon <- c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7, 15.9)
 area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) |>
-  mutate_at(c("lat","lon"), as.numeric)
+  mutate_at(c("lat", "lon"), as.numeric)
 ```
 
 ## Fit VBGE models
@@ -190,9 +177,10 @@ IVBG |>
   geom_errorbar(alpha = 0.5) +
   NULL
 
-# We can also consider removing the upper 95% quantile of standard errors (not quantile of K directly)
+# We can also consider removing individuals where the SE of k is larger than the fit
 IVBG |>
-  tidylog::mutate(keep = ifelse(k > quantile(k_se, probs = 0.95), "N", "Y")) |>
+  #mutate(keep = ifelse(k > quantile(k_se, probs = 0.95), "N", "Y")) |>
+  mutate(keep = ifelse(k < k_se, "N", "Y")) |>
   #filter(row_id < 10000) |>
   ggplot(aes(row_id, k, ymin = k_lwr, ymax = k_upr, color = keep)) +
   geom_point(alpha = 0.5) +
@@ -225,11 +213,13 @@ write_csv(sample_size, paste0(home, "/output/sample_size.csv"))
 
 # Compare how the means and quantiles differ depending on this filtering
 IVBG_filter <- IVBG |>
-  tidylog::drop_na(k_se) |>
-  tidylog::filter(k_se < quantile(k_se, probs = 0.95))
+  drop_na(k_se) |>
+  #filter(k_se < quantile(k_se, probs = 0.95)) |> 
+  filter(k_se < k)
 
 # Summarize growth coefficients by cohort and area
 VBG <- IVBG |>
+  filter(k_se < k) |> # new!
   group_by(cohort, area) |>
   summarize(k_mean = mean(k, na.rm = T),
             k_median = quantile(k, prob = 0.5, na.rm = T),
@@ -253,27 +243,79 @@ ggplot() +
                                      fill = "Filtered"), alpha = 0.4) +
   geom_line(data = VBG, aes(cohort, k_median, color = "All k's")) + 
   geom_line(data = VBG_filter, aes(cohort, k_median, color = "Filtered")) + 
-  guides(fill = FALSE) +
+  guides(fill = "none") +
   facet_wrap(~area)
 
 ggplot() +
   geom_line(data = VBG, aes(cohort, k_median, color = "All k's")) + 
   geom_line(data = VBG_filter, aes(cohort, k_median, color = "Filtered")) + 
-  guides(fill = FALSE) +
+  guides(fill = "none") +
   facet_wrap(~area)
 
 # No difference at all really. We should probably just discuss that with this model, achieving biologically reasonable parameter values and a good fit to data are sometimes two different things. In our case, we just want a representative value of the growth (as in time to reach average maximum size in the population) that accounts for the entire growth trajectory of an individual, for each area and cohort.
 ```
 
+BT 1996 has a very high k, so I'll inspect it in more detail
+
+```{r}
+#|ccache: false
+
+bt96 <- IVBG |> 
+  filter(area == "BT" & cohort %in% c(1995, 1996, 1997, 1998))
+
+ggplot(bt96, aes(as.factor(cohort), k)) + 
+  geom_jitter(width = 0.2, height = 0) + 
+  geom_boxplot(fill = NA, width = 0.2) + 
+  geom_hline(yintercept = mean(filter(bt96, cohort == 1996)$k), linetype = 2)
+
+# Check the fits in more detail
+bt96b <- bt96 |> filter(cohort == 1996) |> as.data.frame()
+
+t <- bt96b |> 
+  filter(k_se < k) |>
+  filter(linf_se < linf) |> 
+  filter(linf_lwr > 0)
+
+t
+
+bt96 |> 
+  filter(k_se < k) |>
+  filter(linf_se < linf) |> 
+  filter(linf_lwr > 0) |> 
+  ggplot(aes(as.factor(cohort), k)) + 
+  geom_jitter(width = 0.2, height = 0) + 
+  geom_boxplot(fill = NA, width = 0.2) + 
+  geom_hline(yintercept = mean(filter(bt96, cohort == 1996)$k), linetype = 2)
+
+# Plot these individuals in t
+t <- t |> 
+  left_join(d, by = "ID") |> 
+  mutate(length_mm_pred = linf*(1-exp(-k*age_bc)))
+
+ggplot(t, aes(as.factor(cohort), k)) + 
+  geom_jitter(width = 0.2, height = 0) + 
+  geom_boxplot(fill = NA, width = 0.2) + 
+  geom_hline(yintercept = mean(t$k), linetype = 2)
+
+ggplot(t, aes(age_bc, length_mm)) +
+  geom_jitter(width = 0.3) +
+  geom_line(aes(age_bc, length_mm_pred)) +
+  facet_wrap(~ID)
+
+# These fits look totally reasonable
+```
+
 ## Add GAM-predicted temperature to growth models
 
 ```{r}
+#| cache: false
 pred_temp <- read_csv(paste0(home, "/output/gam_predicted_temps.csv")) |> 
   rename(cohort = year)
 
-VBG <- VBG |> left_join(pred_temp, by = c("area", "cohort"))
+VBG <- VBG |>
+  left_join(pred_temp, by = c("area", "cohort"))
 
-# save data for map-plot
+# Save data for map-plot
 cohort_sample_size <- IVBG |>
   group_by(area, cohort) |> 
   summarise(n = n()) # individuals, not samples!
@@ -281,6 +323,18 @@ cohort_sample_size <- IVBG |>
 VBG <- left_join(VBG, cohort_sample_size, by = c("cohort", "area"))
 
 write_csv(VBG, paste0(home, "/output/vbg.csv"))
+
+# Calculate the plotting order (also used for map plot)
+order <- VBG |>
+  ungroup() |>
+  group_by(area) |>
+  summarise(min_temp = min(temp)) |>
+  arrange(desc(min_temp))
+
+order
+
+nareas <- length(unique(order$area)) + 2 # to skip the brightest colors
+colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(7,8)]
 ```
 
 ## Plot VBGE fits
@@ -313,27 +367,27 @@ ggplot(d2, aes(age_bc, length_mm, group = ID, color = ID)) +
 
 ggsave(paste0(home, "/figures/vb_fits.pdf" ), width = 17, height = 17, units = "cm")
 
-rugs <- IVBG |> 
-  group_by(area) |> 
-  summarise(median_k = median(k),
-            median_linf = median(linf))
+# rugs <- IVBG |> 
+#   group_by(area) |> 
+#   summarise(median_k = median(k),
+#             median_linf = median(linf))
 
-k <- IVBG |> 
-  ggplot(aes(k, color = factor(area, order$area))) + 
-  geom_density(alpha = 0.4, fill = NA, adjust = 1.5) +  
-  scale_color_manual(values = colors, name = "Area") +
-  coord_cartesian(expand = 0) + 
-  labs(x = expression(italic(k))) +
-  geom_rug(data = rugs, aes(median_k)) +
-  theme(legend.position = c(0.9, 0.5))
+# k <- IVBG |> 
+#   ggplot(aes(k, color = factor(area, order$area))) + 
+#   geom_density(alpha = 0.4, fill = NA, adjust = 1.5) +  
+#   scale_color_manual(values = colors, name = "Area") +
+#   coord_cartesian(expand = 0) + 
+#   labs(x = expression(italic(k))) +
+#   geom_rug(data = rugs, aes(median_k)) +
+#   theme(legend.position = c(0.9, 0.5))
 
 # violons instead?
 k2 <- IVBG |> 
   ggplot(aes(factor(area, order$area), k, fill = factor(area, order$area))) + 
-  geom_violin(alpha = 0.8, draw_quantiles = 0.5) +  
-  # geom_boxplot(outlier.color = NA, width = 0.2, alpha = 0.8, fill = NA, size = 0.4) +
-  # geom_jitter(data = IVBG |> group_by(area) |> slice_sample(n = 1000),
-  #             aes(factor(area, order$area), k), height = 0, width = 0.2, alpha = 0.06,
+  geom_violin(alpha = 0.6, color = NA) +  
+  geom_boxplot(outlier.color = NA, width = 0.2, alpha = 0.8, fill = NA, size = 0.4) +
+  # geom_jitter(data = IVBG |> group_by(area) |> slice_sample(n = 100),
+  #             aes(factor(area, order$area), k), height = 0, width = 0.2, alpha = 0.1,
   #             color = "grey40") +
   scale_fill_manual(values = colors, name = "Area") +
   guides(fill = "none", color = "none") +
@@ -341,32 +395,37 @@ k2 <- IVBG |>
 
 k2
 
-linf <- IVBG |> 
-  ggplot(aes(linf, color = factor(area, order$area))) + 
-  geom_density(alpha = 0.4, fill = NA, adjust = 1.5) +  
-  scale_color_manual(values = colors, name = "Area") +
-  coord_cartesian(expand = 0, xlim = c(0, 2000)) + 
-  labs(x = expression(paste(italic(L[infinity]), " [cm]"))) +
-  geom_rug(data = rugs, aes(median_linf)) +
-  guides(color = "none")
+# linf <- IVBG |> 
+#   ggplot(aes(linf, color = factor(area, order$area))) + 
+#   geom_density(alpha = 0.4, fill = NA, adjust = 1.5) +  
+#   scale_color_manual(values = colors, name = "Area") +
+#   coord_cartesian(expand = 0, xlim = c(0, 2000)) + 
+#   labs(x = expression(paste(italic(L[infinity]), " [cm]"))) +
+#   geom_rug(data = rugs, aes(median_linf)) +
+#   guides(color = "none")
 
 linf2 <- IVBG |> 
+  # group_by(area) |> 
+  # mutate(upr = quantile(linf, probs = 0.95)) |> 
+  # ungroup() |> 
+  # filter(linf < upr) |> 
   ggplot(aes(factor(area, order$area), linf, fill = factor(area, order$area))) + 
-  geom_violin(alpha = 0.8, draw_quantiles = 0.5) +  
-  coord_cartesian(expand = 0, ylim = c(0, 2000)) + 
-  # geom_boxplot(outlier.color = NA, width = 0.2, alpha = 0.8, fill = NA, size = 0.4) +
-  # geom_jitter(data = IVBG |> group_by(area) |> slice_sample(n = 1000),
-  #             aes(factor(area, order$area), linf), height = 0, width = 0.2, alpha = 0.06,
+  geom_violin(alpha = 0.6, color = NA) +  
+  geom_boxplot(outlier.color = NA, width = 0.1, alpha = 0.8, fill = NA, size = 0.4) +
+  coord_cartesian(ylim = c(0, 2300)) +
+  # geom_jitter(data = IVBG |> group_by(area) |> slice_sample(n = 100),
+  #             aes(factor(area, order$area), linf), height = 0, width = 0.2, alpha = 0.1,
   #             color = "grey40") +
   scale_fill_manual(values = colors, name = "Area") +
   guides(fill = "none", color = "none") +
   labs(x = "", y = expression(paste(italic(L[infinity]), " [cm]")))
+
 linf2
 
-k / linf
+#k / linf
 k2 / linf2
 
-ggsave(paste0(home, "/figures/vb_pars2.pdf" ), width = 17, height = 17, units = "cm")
+ggsave(paste0(home, "/figures/vb_pars.pdf" ), width = 17, height = 17, units = "cm")
 ```
 
 ## Fit Sharpe-Schoolfield model to K
@@ -380,9 +439,6 @@ model <- 'sharpeschoolhigh_1981'
 dat <- VBG |>
   select(k_median, temp, area) |>
   rename(rate = k_median)
-
-# TODO: fix NA temp?
-dat <- dat |> drop_na(temp)
 
 lower <- get_lower_lims(dat$temp, dat$rate, model_name = model)
 upper <- get_upper_lims(dat$temp, dat$rate, model_name = model)
@@ -448,27 +504,355 @@ data.frame(par = names(coef(fit_all)), est = coef(fit_all)) |>
   summarise(t_opt = (eh*th) / (eh + kb*th*log((eh/e)-1)))
 ```
 
-## Plot Sharpe Schoolfield fits
+Plot Sharpe Schoolfield fits
 
 ```{r}
 # Plot growth coefficients by year and area against mean SST
+
 p1 <- preds |>
   ggplot(aes(temp, .fitted, color = factor(area, order$area))) + 
-  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6) +
+  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 1, alpha = 0.8) +
   geom_line(linewidth = 1) +
   geom_line(data = pred_all, aes(temp, .fitted), linewidth = 1, inherit.aes = FALSE, linetype = 2) +
   scale_color_manual(values = colors, name = "Area") +
-  guides(color = guide_legend(override.aes = list(size = 1))) +
+  guides(color = guide_legend(nrow = 1, reverse = TRUE, title.position = "top", title.hjust = 0.5,
+                              override.aes = list(size = 1))) +
   scale_x_continuous(breaks = seq(-5, 20, 1)) +
   labs(x = "Temperature (°C)",
        y = "von Bertalanffy growth coefficient (*k*)") +
-  theme(axis.title.y = ggtext::element_markdown())
+  theme(axis.title.y = ggtext::element_markdown(),
+        legend.position = "bottom",
+        legend.direction = "horizontal")
 
 p1 + facet_wrap(~factor(area, levels = (arrange(area_attr, desc(lat)))$area))
   
 p1
 
 ggsave(paste0(home, "/figures/sharpe_school.pdf" ), width = 17, height = 17, units = "cm")
+```
+
+## Can we fit a single Sharpe Schoolfield with area-specific parameters with `brms`?
+
+```{r}
+# Again, here are the data we are fitting:
+ggplot(dat, aes(temp, rate, color = factor(area, order$area))) + 
+  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6)  
+
+# Which family to use? Well we can try with a Gaussian or a student-t first... 
+# After that, maybe gamma or lognormal, if we predict negative K's
+hist(dat$rate)
+
+# Here's the equation:
+sharpeschoolhigh_1981
+
+# Add in fixed parameters
+dat$bk <- 8.62e-05
+dat$tref <- 8 + 273.15
+
+# We can use the nls() parameters as starting values
+summary(fit_all)
+
+# As a first guess, I use the nls estimate as the mean, and standard deviation something close to it. We can also bound som fo them by 0, since negative values shouldn't be possible
+n=10000
+hist(rnorm(0.4, 0.4, n=n), main = "rtref")
+hist(rnorm(1.4, 0.6, n=n), main = "e") 
+hist(rnorm(2.1, 1.5, n=n), main = "eh")
+hist(rnorm(7.5, 4, n=n), main = "hh")
+
+fit_prior <- brm(
+  bf(rate ~ (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15)))),
+     rtref + e + eh + th ~ 1, 
+     nl = TRUE),
+  data = dat,
+  cores = 2,
+  chains = 2,
+  iter = 1500,
+  sample_prior = "only",
+  seed = 9,
+  prior = c(
+    prior(normal(0.4, 0.4), nlpar = "rtref", lb = 0),
+    prior(normal(1.4, 0.6), nlpar = "e"),
+    prior(normal(2.1, 1.5), nlpar = "eh"),
+    prior(normal(7.5, 4), nlpar = "th", lb = 0)
+  )
+)
+
+# Global prior predictive check in relation to data. Doesn't loo too informative...
+dat |>
+  data_grid(temp = seq_range(temp, n = 51)) |> 
+  ungroup() |> 
+  mutate(bk = 8.62e-05,
+         tref = 8 + 273.15) |> 
+  add_epred_draws(fit_prior) |> 
+  mutate(rtref = 0.27, e = 0.7, eh = 1.8, th = 11.8) |> 
+  mutate(man_pred = (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15))))) |> 
+  ggplot(aes(temp, y = .epred)) +
+  stat_lineribbon(.width = c(0.95), alpha = 0.3, color = "black", fill = "black") + 
+  geom_line(aes(y = man_pred), color = "tomato3", linetype = 2) + 
+  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6) +
+  scale_color_manual(values = colors, name = "Area") +
+  NULL
+
+# Now make sure it converges with real data but no random effects
+fit_global <- brm(
+  bf(rate ~ (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15)))),
+     rtref + e + eh + th ~ 1,
+     nl = TRUE),
+  data = dat,
+  cores = 4,
+  chains = 4,
+  iter = 4000,
+  seed = 9,
+  prior = c(
+    prior(normal(0.4, 0.4), nlpar = "rtref", lb = 0),
+    prior(normal(1.4, 0.6), nlpar = "e"),
+    prior(normal(2.1, 1.5), nlpar = "eh"),
+    prior(normal(7.5, 4), nlpar = "th", lb = 0)
+  )
+)
+
+plot(fit_global)
+pp_check(fit_global)
+plot(conditional_effects(fit_global, effect = "temp"), points = TRUE)
+
+dat |>
+  data_grid(temp = seq_range(temp, n = 51)) |> 
+  ungroup() |> 
+  mutate(bk = 8.62e-05,
+         tref = 8 + 273.15) |> 
+  add_epred_draws(fit_global) |> 
+  mutate(rtref = 0.4391, e = 1.4258, eh = 2.1066, th = 7.5369) |> # from summary(fit_all)
+  mutate(man_pred = (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15))))) |> 
+  ggplot(aes(temp, y = .epred)) +
+  stat_lineribbon(.width = c(0.95), alpha = 0.3, color = "black", fill = "black") + 
+  geom_line(aes(y = man_pred), color = "tomato3", linetype = 2) + 
+  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6) +
+  scale_color_manual(values = colors, name = "Area")
+```
+
+Ok, seems to work with priors and everything. They are roughly as broad as can be and still have a fit. Now fit the full model, with random area effects, more iterations and chains!
+
+```{r}
+# Still good enough, might change some priors. Now look at random area effects!
+# Gaussian model
+fitb <- brm(
+  bf(rate ~ (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15)))),
+     rtref + e + eh + th ~ 1 + (1|area),
+     nl = TRUE),
+  data = dat,
+  cores = 4,
+  chains = 4,
+  iter = 4000,
+  sample_prior = "yes",
+  save_pars = save_pars(all = TRUE),
+  seed = 9,
+  prior = c(
+    prior(normal(0.4, 0.4), nlpar = "rtref", lb = 0),
+    prior(normal(1.4, 0.6), nlpar = "e"),
+    prior(normal(2.1, 1.5), nlpar = "eh"),
+    prior(normal(7.5, 4), nlpar = "th", lb = 0)
+  ),
+  control = list(adapt_delta = 0.95, max_treedepth = 12)
+)
+
+# Student-t model
+fitbs <- brm(
+  bf(rate ~ (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15)))),
+     rtref + e + eh + th ~ 1 + (1|area),
+     nl = TRUE),
+  data = dat,
+  family = student,
+  cores = 4,
+  chains = 4,
+  iter = 4000,
+  sample_prior = "yes",
+  save_pars = save_pars(all = TRUE),
+  seed = 9,
+  prior = c(
+    prior(normal(0.4, 0.4), nlpar = "rtref", lb = 0),
+    prior(normal(1.4, 0.6), nlpar = "e"),
+    prior(normal(2.1, 1.5), nlpar = "eh"),
+    prior(normal(7.5, 4), nlpar = "th", lb = 0)
+  ),
+  control = list(adapt_delta = 0.95, max_treedepth = 12)
+)
+```
+
+Compare fitted models based on ELPD. Preferred model in the first row!
+
+```{r}
+fitb_loo <- loo(fitb, moment_match = TRUE)
+fitbs_loo <- loo(fitbs, moment_match = TRUE)
+
+loo_compare(fitb_loo, fitbs_loo)
+```
+
+The student model is preferred. Inspect it!
+
+```{r}
+# Check fit
+summary(fitbs)
+
+plot(fitbs)
+
+pp_check(fitbs)
+
+ggsave(paste0(home, "/figures/supp/sharpe_brms_ppcheck.pdf" ), width = 11, height = 11, units = "cm")
+
+# Plot prior vs posterior
+post <- fitbs |>
+  as_draws_df() |>
+  dplyr::select(b_rtref_Intercept, b_e_Intercept, b_eh_Intercept, b_th_Intercept) |> 
+  rename(rtref = b_rtref_Intercept, 
+         e = b_e_Intercept,
+         eh = b_eh_Intercept,
+         th = b_th_Intercept) |> 
+  pivot_longer(everything(), names_to = "parameter") |> 
+  mutate(type = "Posterior")
+
+prior <- fitbs |>
+  as_draws_df() |>
+  dplyr::select(prior_b_rtref, prior_b_e, prior_b_eh, prior_b_th) |> 
+    rename(rtref = prior_b_rtref, 
+         e = prior_b_e,
+         eh = prior_b_eh,
+         th = prior_b_th) |> 
+  pivot_longer(everything(), names_to = "parameter") |> 
+  mutate(type = "Prior")
+
+dist <- bind_rows(prior, post)
+
+ggplot(dist, aes(value, fill = type)) +
+  geom_density(color = NA, alpha = 0.5) +
+  scale_fill_brewer(palette = "Set1") +
+  facet_wrap(~parameter, scales = "free") + 
+  theme(legend.position = c(0.35, 0.9)) +
+  labs(fill = "")
+
+ggsave(paste0(home, "/figures/supp/sharpe_brms_prior.pdf" ), width = 17, height = 17, units = "cm")
+
+# Calculate T_opt
+fitbs |>
+  as_draws_df() |>
+  dplyr::select( b_e_Intercept, b_eh_Intercept, b_th_Intercept) |> 
+  rename(e = b_e_Intercept,
+         eh = b_eh_Intercept,
+         th = b_th_Intercept) |> 
+  mutate(kb = 8.62e-05) |> 
+  ungroup() |> 
+  mutate(t_opt = (eh*th) / (eh + kb*th*log((eh/e)-1))) |> 
+  drop_na(t_opt) |> 
+  summarise(lwr_t_opt = quantile(t_opt, probs = 0.1),
+            median_t_opt = median(t_opt),
+            upr_t_opt = quantile(t_opt, probs = 0.9))
+
+# Make the main plot (conditional effect of temperature, with and without random effects)
+# Predictions without random effects
+glob <- dat |>
+  data_grid(temp = seq_range(temp, n = 100)) |> 
+  mutate(bk = 8.62e-05,
+         tref = 8 + 273.15) |> 
+  add_epred_draws(fitbs, re_formula = NA) |> 
+  ungroup()
+
+dat |>
+  group_by(area) |>
+  data_grid(temp = seq_range(temp, n = 100)) |> 
+  ungroup() |> 
+  mutate(bk = 8.62e-05,
+         tref = 8 + 273.15) |> 
+  add_epred_draws(fitbs) |> 
+  ungroup() |> 
+  ggplot(aes(temp, y = .epred, color = factor(area, order$area))) +
+  stat_lineribbon(data = glob, aes(temp, .epred), .width = c(0.9), inherit.aes = FALSE,
+                  fill = "black", color = "black", alpha = 0.1) +
+  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 1, alpha = 0.8) +
+  stat_lineribbon(.width = c(0)) +
+  stat_lineribbon(data = glob, aes(temp, .epred), .width = c(0), inherit.aes = FALSE,
+                  color = "black", alpha = 0.9, linetype = 2) +
+  # trimming the y-axis a bit... highest k is 0.53, second highest is 0.37
+  coord_cartesian(ylim = c(min(dat$rate) - 0.01, sort(dat$rate)[length(dat$rate) - 1] + 0.01)) +
+  scale_color_manual(values = colors, name = "Area") +
+  guides(fill = "none",
+         color = guide_legend(nrow = 1, reverse = TRUE, title.position = "top", title.hjust = 0.5,
+                              override.aes = list(size = 1))) +
+  theme(axis.title.y = ggtext::element_markdown(),
+        legend.position = "bottom",
+        legend.direction = "horizontal") +
+  labs(x = "Temperature (°C)",
+       y = "von Bertalanffy growth coefficient (*k*)")
+  
+ggsave(paste0(home, "/figures/sharpe_school_bayes.pdf" ), width = 17, height = 17, units = "cm")
+```
+
+Now plot comparisons with the nls multstart fits
+
+```{r}
+# Compare with area-specific sharpe scool!
+area_pred_brms <- dat |>
+  group_by(area) |> 
+  data_grid(temp = seq_range(temp, n = 100)) |> 
+  ungroup() |> 
+  mutate(bk = 8.62e-05,
+         tref = 8 + 273.15) |> 
+  add_epred_draws(fitbs)
+
+# Plot area specific in comparison with nls multstart
+p1 <- ggplot(area_pred_brms, aes(temp, y = .epred, color = factor(area, order$area),
+                           fill = factor(area, order$area))) +
+  stat_lineribbon(.width = c(0.95), alpha = 0.4, color = NA) +
+  stat_lineribbon(.width = c(0)) + 
+  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6) +
+  scale_color_manual(values = colors, name = "Area") +
+  scale_fill_manual(values = colors, name = "Area") +
+  scale_linetype_manual(values = 2) +
+  facet_wrap(~factor(area, rev(order$area))) +
+  guides(fill = "none",
+         color = guide_legend(nrow = 1, reverse = TRUE, title.position = "top", title.hjust = 0.5,
+                              override.aes = list(size = 1))) +
+  theme(axis.title.y = ggtext::element_markdown(),
+        legend.position = "bottom",
+        legend.direction = "horizontal") +
+  labs(x = "Temperature (°C)",
+       y = "von Bertalanffy growth coefficient (*k*)",
+       linetype = "")
+
+p1
+
+ggsave(paste0(home, "/figures/supp/sharpe_school_bayes_ci_facet.pdf" ), width = 17, height = 17, units = "cm")
+
+# Now compare to nls fits
+p1 + geom_line(data = preds, aes(temp, .fitted, linetype = "nls multstart"), color = "gray10")
+
+# And for the population-level prediction
+nd_brms <- dat |>
+  data_grid(temp = seq_range(temp, n = 100)) |> 
+  ungroup() |> 
+  mutate(bk = 8.62e-05,
+         tref = 8 + 273.15)
+
+pred_brms <- predict(fitbs, newdata = nd_brms, re_formula = NA) |> as.data.frame()
+nd_brms$pred_pop <- pred_brms$Estimate
+
+# (why not also comparing the global brms model...)
+pred_brms_global <- predict(fit_global, newdata = nd_brms) |> as.data.frame()
+nd_brms$pred_glob <- pred_brms_global$Estimate
+
+ggplot(nd_brms, aes(temp, y = pred_pop, linetype = "mixed brms model")) +
+  geom_line() + 
+  geom_line(data = pred_all, aes(temp, .fitted, linetype = "nls"), linewidth = 1, inherit.aes = FALSE) +
+  geom_line(data = nd_brms, aes(temp, pred_glob, linetype = "global brms model"), linewidth = 1, inherit.aes = FALSE) +
+  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6) +
+  scale_color_manual(values = colors, name = "Area") +
+  scale_linetype_manual(values = c(1, 2, 3)) + 
+  guides(fill = "none",
+         color = guide_legend(ncol = 1, reverse = TRUE, title.position = "top", title.hjust = 0.5,
+                              override.aes = list(size = 1)),
+         linetype = guide_legend(keywidth = unit(1, "cm"))) +
+  theme(axis.title.y = ggtext::element_markdown()) +
+  labs(x = "Temperature (°C)",
+       y = "von Bertalanffy growth coefficient (*k*)",
+       linetype = "Model")
 ```
 
 ## Extra analysis

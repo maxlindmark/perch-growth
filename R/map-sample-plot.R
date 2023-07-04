@@ -34,8 +34,8 @@ utm_zone33 <- 32634
 swe_coast_proj <- sf::st_transform(swe_coast, crs = utm_zone33)
 
 # Add points and use same color palette as in VBGE and temp plot
-# Order for plotting colors (see temperature fitting script!)
-order <- data.frame(area = c("SI_HA", "BT", "TH", "FM", "JM", "BS", "SI_EK", "FB", "MU", "RA", "HO")) 
+# Order for plotting colors (but not facet order) (see temperature fitting script!)
+order <- data.frame(area = c("SI_HA", "TH", "BS", "BT", "FM", "SI_EK", "MU", "FB", "HO", "JM", "RA")) 
 
 nareas <- length(unique(order$area)) + 2 # to skip the brightest colors
 colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(7,8)]
@@ -94,10 +94,8 @@ order_facet <- df |> arrange(desc(lat))
 
 p2 <- ggplot(vbg, aes(cohort, k_median, size = n, color = factor(area_full, levels = order$area_full),
                       fill = factor(area, levels = order$area))) + 
-  #geom_point(shape = 21, fill = NA, stroke = 0.8) + 
   geom_point() +
   theme_sleek() + 
-  #geom_smooth(se = FALSE, method = "gam", formula = y~s(x, k=4), linewidth = 0.3) +
   guides(fill = "none", color = "none", 
          size = guide_legend(override.aes = list(linetype = NA))) +
   labs(x = "Cohort", y = "Median von Bertalanffy growth coefficient (*k*)", size = "#individuals") +
@@ -109,10 +107,11 @@ p2 <- ggplot(vbg, aes(cohort, k_median, size = n, color = factor(area_full, leve
         legend.key.height = unit(0.01, 'cm'), 
         legend.text = element_text(size = 6),
         legend.title = element_text(size = 7),
+        strip.text = element_text(size = 8),
         axis.title.y = ggtext::element_markdown())
 
 p2
 
 p1 + p2
   
-ggsave(paste0(home, "/figures/map_sample_size2.pdf"), width = 17, height = 17, units = "cm")
+ggsave(paste0(home, "/figures/map_sample_size.pdf"), width = 17, height = 17, units = "cm")
