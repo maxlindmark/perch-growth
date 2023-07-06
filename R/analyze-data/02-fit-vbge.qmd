@@ -258,7 +258,7 @@ ggplot() +
 BT 1996 has a very high k, so I'll inspect it in more detail
 
 ```{r}
-#|ccache: false
+#|cache: false
 
 bt96 <- IVBG |> 
   filter(area == "BT" & cohort %in% c(1995, 1996, 1997, 1998))
@@ -289,6 +289,7 @@ bt96 |>
 
 # Plot these individuals in t
 t <- t |> 
+  dplyr::select(-cohort) |> 
   left_join(d, by = "ID") |> 
   mutate(length_mm_pred = linf*(1-exp(-k*age_bc)))
 
@@ -497,11 +498,17 @@ new_data_all <- data.frame(temp = seq(min(dat$temp), max(dat$temp), length.out =
 pred_all <- augment(fit_all, newdata = new_data_all) |> 
   mutate(area = "all")
 
-# Add t_opt
+# Add t_opt (not correct equation I think!) from Padfield 2021 ISME
 kb <- 8.62e-05
-data.frame(par = names(coef(fit_all)), est = coef(fit_all)) |> 
-  pivot_wider(names_from = par, values_from = est) |> 
-  summarise(t_opt = (eh*th) / (eh + kb*th*log((eh/e)-1)))
+# data.frame(par = names(coef(fit_all)), est = coef(fit_all)) |> 
+#   pivot_wider(names_from = par, values_from = est) |> 
+#   summarise(t_opt = (eh*th) / (eh + kb*th*log((eh/e)-1)))
+# 
+# get_topt
+
+# This rTPC function just finds the temperature where the function is maximized,
+# do that also for brms fits
+get_topt(fit_all)
 ```
 
 Plot Sharpe Schoolfield fits
@@ -550,14 +557,22 @@ dat$bk <- 8.62e-05
 dat$tref <- 8 + 273.15
 
 # We can use the nls() parameters as starting values
+nlspars <- summary(fit_all)$coefficients[, 1]
 summary(fit_all)
+# Parameters:
+#        Estimate Std. Error t value Pr(>|t|)  
+# r_tref   0.5265     0.5818   0.905   0.3661  
+# e        1.3179     1.1940   1.104   0.2705  
+# eh       1.8364     0.7329   2.506   0.0127 *
+# th       6.5328     6.1852   1.056   0.2916  
 
 # As a first guess, I use the nls estimate as the mean, and standard deviation something close to it. We can also bound som fo them by 0, since negative values shouldn't be possible
+# (better visualization including bounds further down)
 n=10000
-hist(rnorm(0.4, 0.4, n=n), main = "rtref")
-hist(rnorm(1.4, 0.6, n=n), main = "e") 
-hist(rnorm(2.1, 1.5, n=n), main = "eh")
-hist(rnorm(7.5, 4, n=n), main = "hh")
+hist(rnorm(0.5, 2.5, n=n), main = "rtref")
+hist(rnorm(1, 2.5, n=n), main = "e") 
+hist(rnorm(2, 2.5, n=n), main = "eh")
+hist(rnorm(6, 5, n=n), main = "hh")
 
 fit_prior <- brm(
   bf(rate ~ (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15)))),
@@ -570,10 +585,10 @@ fit_prior <- brm(
   sample_prior = "only",
   seed = 9,
   prior = c(
-    prior(normal(0.4, 0.4), nlpar = "rtref", lb = 0),
-    prior(normal(1.4, 0.6), nlpar = "e"),
-    prior(normal(2.1, 1.5), nlpar = "eh"),
-    prior(normal(7.5, 4), nlpar = "th", lb = 0)
+    prior(normal(0.5, 2.5), nlpar = "rtref", lb = 0),
+    prior(normal(1, 2.5), nlpar = "e", lb = 0),
+    prior(normal(2, 2.5), nlpar = "eh", lb = 0),
+    prior(normal(6, 5), nlpar = "th", lb = 0)
   )
 )
 
@@ -584,13 +599,14 @@ dat |>
   mutate(bk = 8.62e-05,
          tref = 8 + 273.15) |> 
   add_epred_draws(fit_prior) |> 
-  mutate(rtref = 0.27, e = 0.7, eh = 1.8, th = 11.8) |> 
+  mutate(rtref = nlspars[1], e = nlspars[2], eh = nlspars[3], th = nlspars[4]) |> 
   mutate(man_pred = (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15))))) |> 
   ggplot(aes(temp, y = .epred)) +
   stat_lineribbon(.width = c(0.95), alpha = 0.3, color = "black", fill = "black") + 
   geom_line(aes(y = man_pred), color = "tomato3", linetype = 2) + 
   geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6) +
   scale_color_manual(values = colors, name = "Area") +
+  coord_cartesian(ylim = c(0, 10)) + # Extends waaaay higher... 
   NULL
 
 # Now make sure it converges with real data but no random effects
@@ -601,14 +617,16 @@ fit_global <- brm(
   data = dat,
   cores = 4,
   chains = 4,
-  iter = 4000,
+  iter = 4000, 
   seed = 9,
+  sample_prior = "yes",
   prior = c(
-    prior(normal(0.4, 0.4), nlpar = "rtref", lb = 0),
-    prior(normal(1.4, 0.6), nlpar = "e"),
-    prior(normal(2.1, 1.5), nlpar = "eh"),
-    prior(normal(7.5, 4), nlpar = "th", lb = 0)
-  )
+    prior(normal(0.5, 2.5), nlpar = "rtref", lb = 0),
+    prior(normal(1, 2.5), nlpar = "e", lb = 0),
+    prior(normal(2, 2.5), nlpar = "eh", lb = 0),
+    prior(normal(6, 5), nlpar = "th", lb = 0)
+  ),
+  control = list(adapt_delta = 0.99, max_treedepth = 12)
 )
 
 plot(fit_global)
@@ -621,13 +639,43 @@ dat |>
   mutate(bk = 8.62e-05,
          tref = 8 + 273.15) |> 
   add_epred_draws(fit_global) |> 
-  mutate(rtref = 0.4391, e = 1.4258, eh = 2.1066, th = 7.5369) |> # from summary(fit_all)
+  mutate(rtref = nlspars[1], e = nlspars[2], eh = nlspars[3], th = nlspars[4]) |> # from summary(fit_all)
   mutate(man_pred = (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15))))) |> 
   ggplot(aes(temp, y = .epred)) +
   stat_lineribbon(.width = c(0.95), alpha = 0.3, color = "black", fill = "black") + 
   geom_line(aes(y = man_pred), color = "tomato3", linetype = 2) + 
   geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6) +
   scale_color_manual(values = colors, name = "Area")
+
+# Plot prior vs posterior
+post <- fit_global |>
+  as_draws_df() |>
+  dplyr::select(b_rtref_Intercept, b_e_Intercept, b_eh_Intercept, b_th_Intercept) |> 
+  rename(rtref = b_rtref_Intercept, 
+         e = b_e_Intercept,
+         eh = b_eh_Intercept,
+         th = b_th_Intercept) |> 
+  pivot_longer(everything(), names_to = "parameter") |> 
+  mutate(type = "Posterior")
+
+prior <- fit_global |>
+  as_draws_df() |>
+  dplyr::select(prior_b_rtref, prior_b_e, prior_b_eh, prior_b_th) |> 
+    rename(rtref = prior_b_rtref, 
+         e = prior_b_e,
+         eh = prior_b_eh,
+         th = prior_b_th) |> 
+  pivot_longer(everything(), names_to = "parameter") |> 
+  mutate(type = "Prior")
+
+dist <- bind_rows(prior, post)
+
+ggplot(dist, aes(value, fill = type)) +
+  geom_density(color = NA, alpha = 0.5) +
+  scale_fill_brewer(palette = "Set1") +
+  facet_wrap(~parameter, scales = "free") + 
+  theme(legend.position = c(0.35, 0.9)) +
+  labs(fill = "")
 ```
 
 Ok, seems to work with priors and everything. They are roughly as broad as can be and still have a fit. Now fit the full model, with random area effects, more iterations and chains!
@@ -642,17 +690,17 @@ fitb <- brm(
   data = dat,
   cores = 4,
   chains = 4,
-  iter = 4000,
+  iter = 5000,
   sample_prior = "yes",
   save_pars = save_pars(all = TRUE),
   seed = 9,
   prior = c(
-    prior(normal(0.4, 0.4), nlpar = "rtref", lb = 0),
-    prior(normal(1.4, 0.6), nlpar = "e"),
-    prior(normal(2.1, 1.5), nlpar = "eh"),
-    prior(normal(7.5, 4), nlpar = "th", lb = 0)
+    prior(normal(0.5, 2.5), nlpar = "rtref", lb = 0),
+    prior(normal(1, 2.5), nlpar = "e", lb = 0),
+    prior(normal(2, 2.5), nlpar = "eh", lb = 0),
+    prior(normal(6, 5), nlpar = "th", lb = 0)
   ),
-  control = list(adapt_delta = 0.95, max_treedepth = 12)
+  control = list(adapt_delta = 0.99, max_treedepth = 12)
 )
 
 # Student-t model
@@ -664,17 +712,17 @@ fitbs <- brm(
   family = student,
   cores = 4,
   chains = 4,
-  iter = 4000,
+  iter = 5000,
   sample_prior = "yes",
   save_pars = save_pars(all = TRUE),
   seed = 9,
   prior = c(
-    prior(normal(0.4, 0.4), nlpar = "rtref", lb = 0),
-    prior(normal(1.4, 0.6), nlpar = "e"),
-    prior(normal(2.1, 1.5), nlpar = "eh"),
-    prior(normal(7.5, 4), nlpar = "th", lb = 0)
+    prior(normal(0.5, 2.5), nlpar = "rtref", lb = 0),
+    prior(normal(1, 2.5), nlpar = "e", lb = 0),
+    prior(normal(2, 2.5), nlpar = "eh", lb = 0),
+    prior(normal(6, 5), nlpar = "th", lb = 0)
   ),
-  control = list(adapt_delta = 0.95, max_treedepth = 12)
+  control = list(adapt_delta = 0.99, max_treedepth = 12)
 )
 ```
 
@@ -732,19 +780,25 @@ ggplot(dist, aes(value, fill = type)) +
 ggsave(paste0(home, "/figures/supp/sharpe_brms_prior.pdf" ), width = 17, height = 17, units = "cm")
 
 # Calculate T_opt
-fitbs |>
-  as_draws_df() |>
-  dplyr::select( b_e_Intercept, b_eh_Intercept, b_th_Intercept) |> 
-  rename(e = b_e_Intercept,
-         eh = b_eh_Intercept,
-         th = b_th_Intercept) |> 
-  mutate(kb = 8.62e-05) |> 
-  ungroup() |> 
-  mutate(t_opt = (eh*th) / (eh + kb*th*log((eh/e)-1))) |> 
-  drop_na(t_opt) |> 
-  summarise(lwr_t_opt = quantile(t_opt, probs = 0.1),
-            median_t_opt = median(t_opt),
-            upr_t_opt = quantile(t_opt, probs = 0.9))
+ts <- dat |> 
+  data_grid(temp = seq_range(temp, n = 100)) |> 
+  mutate(bk = 8.62e-05,
+         tref = 8 + 273.15) |> 
+  add_epred_draws(fitbs, re_formula = NA, ndraws = 10000) 
+
+ggplot(ts) + 
+  geom_line(aes(temp, y = .epred, group = .draw), alpha = .1)
+
+# Compute quantiles across spaghetties
+t_opt <- ts |> 
+  group_by(.draw) |> 
+  filter(.epred == max(.epred)) |> 
+  ungroup()
+
+ggplot(t_opt, aes(temp)) + 
+  geom_histogram()
+
+quantile(t_opt$temp, probs = c(0.025, 0.5, 0.975))
 
 # Make the main plot (conditional effect of temperature, with and without random effects)
 # Predictions without random effects
@@ -838,13 +892,11 @@ nd_brms$pred_pop <- pred_brms$Estimate
 pred_brms_global <- predict(fit_global, newdata = nd_brms) |> as.data.frame()
 nd_brms$pred_glob <- pred_brms_global$Estimate
 
-ggplot(nd_brms, aes(temp, y = pred_pop, linetype = "mixed brms model")) +
+ggplot(nd_brms, aes(temp, y = pred_pop, color = "mixed brms model")) +
+  geom_point(data = dat, aes(temp, rate), size = 0.6, color = "grey30") +
   geom_line() + 
-  geom_line(data = pred_all, aes(temp, .fitted, linetype = "nls"), linewidth = 1, inherit.aes = FALSE) +
-  geom_line(data = nd_brms, aes(temp, pred_glob, linetype = "global brms model"), linewidth = 1, inherit.aes = FALSE) +
-  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6) +
-  scale_color_manual(values = colors, name = "Area") +
-  scale_linetype_manual(values = c(1, 2, 3)) + 
+  geom_line(data = pred_all, aes(temp, .fitted, color = "nls"), linewidth = 1, inherit.aes = FALSE) +
+  geom_line(data = nd_brms, aes(temp, pred_glob, color = "global brms model"), linewidth = 1, inherit.aes = FALSE) +
   guides(fill = "none",
          color = guide_legend(ncol = 1, reverse = TRUE, title.position = "top", title.hjust = 0.5,
                               override.aes = list(size = 1)),
@@ -852,7 +904,7 @@ ggplot(nd_brms, aes(temp, y = pred_pop, linetype = "mixed brms model")) +
   theme(axis.title.y = ggtext::element_markdown()) +
   labs(x = "Temperature (°C)",
        y = "von Bertalanffy growth coefficient (*k*)",
-       linetype = "Model")
+       color = "")
 ```
 
 ## Extra analysis
