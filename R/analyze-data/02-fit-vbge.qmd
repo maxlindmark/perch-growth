@@ -448,6 +448,7 @@ start <- get_start_vals(dat$temp, dat$rate, model_name = model)
 # Sharpe-Schoolfield model fit to data for each area
 preds <- NULL
 pred <- NULL
+pars <- list()
 
 for(a in unique(dat$area)) {
   
@@ -474,7 +475,23 @@ for(a in unique(dat$area)) {
   # Add to general data frame
   preds <- data.frame(rbind(preds, pred))
   
+  # Add parameter estimates
+  pars[[a]] <- summary(fit)$coefficients |>
+    as.data.frame() |>
+    rownames_to_column(var = "parameter") |>
+    mutate(area = a)
+  
 }
+
+# For comparison with the bayesian model below
+nls_pars <- bind_rows(pars)
+
+nls_pars <- nls_pars |> 
+  mutate(upr = Estimate + 1.96 *`Std. Error`,
+         lwr = Estimate - 1.96 *`Std. Error`) |> 
+  dplyr::select(parameter, Estimate, upr, lwr, area) |> 
+  mutate(source = "nls")
+
 ```
 
 All areas pooled
@@ -906,6 +923,77 @@ ggplot(nd_brms, aes(temp, y = pred_pop, color = "mixed brms model")) +
        y = "von Bertalanffy growth coefficient (*k*)",
        color = "")
 ```
+
+And a comparison of parameter estimates...
+
+```{r}
+
+get_variables(fitbs)
+summary(fitbs)
+
+pop_pars <- summary(fitbs)$fixed |> 
+  as.data.frame() |> 
+  rownames_to_column(var = "parameter") |> 
+  mutate(parameter = str_remove(parameter, "_Intercept"),
+         parameter = ifelse(parameter == "rtref", "r_tref", parameter)) |> 
+  rename(pop_Estimate = Estimate) |> 
+  dplyr::select(parameter, pop_Estimate)
+
+pop_pars <- fitbs |> 
+  gather_draws(b_rtref_Intercept,
+               b_e_Intercept,
+               b_eh_Intercept,
+               b_th_Intercept) |> 
+  rename(parameter = .variable) |> 
+  mutate(parameter = str_remove(parameter, "b_"),
+         parameter = str_remove(parameter, "_Intercept"),
+         parameter = ifelse(parameter == "rtref", "r_tref", parameter)) |> 
+  rename(.pop_value = .value )
+
+brms_pars <- fitbs |> 
+  gather_draws(r_area__rtref[area, Intercept],
+               r_area__e[area, Intercept],
+               r_area__eh[area, Intercept],
+               r_area__th[area, Intercept]) |> 
+  rename(parameter = .variable) |> 
+  mutate(parameter = str_remove(parameter, "r_area__"),
+         parameter = ifelse(parameter == "rtref", "r_tref", parameter)) |> 
+  dplyr::select(-Intercept) |>
+  left_join(pop_pars, by = c(".chain", ".iteration", ".draw", "parameter")) |> 
+  mutate(.value = .pop_value + .value) |> 
+  summarise(Estimate = median(.value),
+            lwr = quantile(.value, probs = 0.025),
+            upr = quantile(.value, probs = 0.975)) |> 
+  ungroup() |> 
+  mutate(source = "brms")
+  
+pars <- bind_rows(brms_pars, nls_pars)
+
+# Need to trim errorbars...
+ggplot(pars, aes(area, Estimate, color = source)) + 
+  geom_point() +
+  geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0) + 
+  facet_wrap(~parameter, scales = "free")
+
+pars |> 
+  ggplot(aes(area, Estimate, color = source)) + 
+  geom_point(position = position_dodge(width = 0.5)) +
+  geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0,
+                position = position_dodge(width = 0.5)) + 
+  coord_cartesian(ylim = c(-3, 20)) + 
+  facet_wrap(~parameter, scales = "free")
+
+# And without errorbars...
+pars |> 
+  ggplot(aes(area, Estimate, color = source)) + 
+  geom_point(position = position_dodge(width = 0.5)) +
+  facet_wrap(~parameter, scales = "free")
+
+pars |> as.data.frame()
+```
+
+
+
 
 ## Extra analysis
 
