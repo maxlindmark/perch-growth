@@ -552,9 +552,9 @@ Make final plot using the area-specific model
 
 ```{r}
 # Overall t_opt from 02-fit-vbge.qmd! Update when I got final model!
-topt_lwr <- 6.681641
-topt <- 8.632517
-topt_upr <- 14.06710
+topt_lwr <- 6.402944
+topt <- 9.468607
+topt_upr <- 14.206451
 
 # Add latitude
 area <- c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA", "SI_EK", "SI_HA")
