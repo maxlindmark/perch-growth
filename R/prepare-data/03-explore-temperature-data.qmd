@@ -4,15 +4,17 @@ author: "Max Lindmark, Jan Ohlberger, Anna Gårdmark"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 format: 
   html:
-    code-fold: true
+    page-layout: full
     embed-resources: true
-    fig-width: 12
-    fig-height: 10
+knitr: 
+  opts_chunk:
+    fig.align: center
+    out-width: 80%
 editor: source
 execute: 
   echo: true
   eval: true
-  cache: true
+  cache: false
 ---
 
 ```{r setup, include = FALSE, cache=FALSE}
@@ -134,9 +136,9 @@ log_dat %>%
 ## Temperature at fishing
 
 ```{r}
-kul_dat <- read_excel(paste0(home, "/data/temp-data-fishing/temp_at_fishing.xlsx"), skip = 4) |> 
+kul_dat <- read_excel(paste0(home, "/data/temp-data-fishing/temp_at_fishing.xlsx"), skip = 4) %>% 
   mutate(Lokal = ifelse(Lokal == "Simpevarp" & Fångstområde == "Ekö", "SI_EK", Lokal),
-         Lokal = ifelse(Lokal == "Simpevarp" & Fångstområde == "Hamnefjärden", "SI_HA", Lokal)) |> 
+         Lokal = ifelse(Lokal == "Simpevarp" & Fångstområde == "Hamnefjärden", "SI_HA", Lokal)) %>% 
   mutate(area = recode_factor(Lokal,
                               "Kvädöfjärden" = "JM", 
                               "Muskö" = "MU",
@@ -146,18 +148,18 @@ kul_dat <- read_excel(paste0(home, "/data/temp-data-fishing/temp_at_fishing.xlsx
                               "Råneå" = "RA",
                               "Torhamn, Karlskrona Ö skärgård" = "TH",
                               "Biotestsjön, Forsmark" = "BT",
-                              "Vinö" = "VN")) |> 
+                              "Vinö" = "VN")) %>% 
   rename(temp = Värde,
          year = År, 
-         date = `Vittjnings\ndatum`) |> 
+         date = `Vittjnings\ndatum`) %>% 
   mutate(db = "KUL",
          yday = yday(date),
          month = month(date),
-         id = paste(year, area, sep = "_")) |> 
-  mutate(temp = ifelse(area == "SI_HA" & temp == 267, 26.7, temp)) |> 
-  filter(!area == "Simpevarp") |> 
-  filter(temp < 100) |> 
-  filter(Vertikalstyp == "Yta") |> 
+         id = paste(year, area, sep = "_")) %>% 
+  mutate(temp = ifelse(area == "SI_HA" & temp == 267, 26.7, temp)) %>% 
+  filter(!area == "Simpevarp") %>% 
+  filter(temp < 100) %>% 
+  filter(Vertikalstyp == "Yta") %>% 
   select(year, yday, date, temp, area, id, db)
 
 # Plot
@@ -187,45 +189,45 @@ for(i in 1:length(filenames)) {
 # Here I get a warning when I convert to data from Year, Week, day-of-week. Could be due to different date standards (week starting with 0 instead of 1, which I think is the ISO way and how our data are coded. It's however not an option in as.Date, which is why i looked into `ISOweek2date`. But that throws an error for some of the dates. Hmm. A simple test however shows that as.Date returns the correct day (double checked). The warnings from as.Date and the error from ISOweek2date could be due to error in data entry. Will explore. 
 # https://stackoverflow.com/questions/45549449/transform-year-week-to-date-object
 # https://www.r-bloggers.com/2013/08/date-formats-in-r/
-firre_dat <- raw_data |> 
-  mutate(group = ifelse(VkDag > 100, "2", "1")) |> 
-  mutate(VkDag2 = ifelse(group == "1", paste0(0, VkDag), VkDag)) |>  # add zero before strings with length 2...
-  separate(VkDag2, sep = 2, into = c("week", 'day'), extra = 'drop', remove = FALSE) |> 
+firre_dat <- raw_data %>% 
+  mutate(group = ifelse(VkDag > 100, "2", "1")) %>% 
+  mutate(VkDag2 = ifelse(group == "1", paste0(0, VkDag), VkDag)) %>%  # add zero before strings with length 2...
+  separate(VkDag2, sep = 2, into = c("week", 'day'), extra = 'drop', remove = FALSE) %>% 
   mutate(week = as.numeric(week), # to get rid of the 0
-         day = as.numeric(day)) |> 
-  mutate(date = as.Date(paste(Årtal, week, day, sep = "-"), "%Y-%U-%u")) |> 
+         day = as.numeric(day)) %>% 
+  mutate(date = as.Date(paste(Årtal, week, day, sep = "-"), "%Y-%U-%u")) %>% 
   # mutate(week2 = paste0("W", week),
-  #        weekdate = paste(Årtal, week2, day, sep = "-")) #|> 
+  #        weekdate = paste(Årtal, week2, day, sep = "-")) #%>% 
   mutate(#date = ISOweek2date(weekdate),
          yday = yday(date),
-         month = month(date)) |> 
+         month = month(date)) %>% 
   rename(year = Årtal,
          stn_nr = Station,
-         section_nr = Sektion) |> 
-  filter(!if_all(c(MedelFörTemperatur_i, MedelFörTemperatur_u), is.na)) |> 
+         section_nr = Sektion) %>% 
+  filter(!if_all(c(MedelFörTemperatur_i, MedelFörTemperatur_u), is.na)) %>% 
   mutate(MedelFörTemperatur_i = ifelse(is.na(MedelFörTemperatur_i), MedelFörTemperatur_u, MedelFörTemperatur_i),
-         MedelFörTemperatur_u = ifelse(is.na(MedelFörTemperatur_u), MedelFörTemperatur_i, MedelFörTemperatur_u)) |> 
+         MedelFörTemperatur_u = ifelse(is.na(MedelFörTemperatur_u), MedelFörTemperatur_i, MedelFörTemperatur_u)) %>% 
   mutate(temp = (MedelFörTemperatur_i + MedelFörTemperatur_u) / 2,
          db = "FIRRE",
-         id = paste(year, area, sep = "_")) |> 
-  select(year, yday, month, day, date, VkDag, temp, area, stn_nr, section_nr, db, id) |> 
-  drop_na(date) |> 
+         id = paste(year, area, sep = "_")) %>% 
+  select(year, yday, month, day, date, VkDag, temp, area, stn_nr, section_nr, db, id) %>% 
+  drop_na(date) %>% 
   mutate(date = as.character(date))
 
 # Now we need to merge it with fish_dat
-fish_dat <- bind_rows(firre_dat |> filter(!id %in% kul_dat$id), # remove duplicates
-                      kul_dat) |> 
+fish_dat <- bind_rows(firre_dat %>% filter(!id %in% kul_dat$id), # remove duplicates
+                      kul_dat) %>% 
   mutate(source = "fishing")
 
 head(fish_dat)
 
-fish_dat |> 
-  filter(area == "BT") |> 
-  group_by(source) |> 
+fish_dat %>% 
+  filter(area == "BT") %>% 
+  group_by(source) %>% 
   summarise(min_yr = min(year))
 
 # Plot data over year
-fish_dat |>
+fish_dat %>%
   ggplot(aes(x = year, y = temp, color = yday)) +
   geom_point(size = 0.25) +
   scale_color_viridis() +
@@ -238,7 +240,7 @@ fish_dat |>
   NULL
 
 # Plot data over yearday
-fish_dat |>
+fish_dat %>%
   ggplot(aes(x = yday, y = temp, color = factor(year))) +
   geom_point(size = 0.25) +
   scale_color_viridis(discrete = TRUE) +
@@ -259,7 +261,7 @@ area <- c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA", "SI_EK", "SI_HA", "TH"
 nareas <- length(area)
 lat <- c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4, 56.1, 57.5)
 lon <- c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7, 15.9, 16.9)
-area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) |>
+area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) %>%
   mutate_at(c("lat", "lon"), as.numeric)
 
 # Download ERSST data - only run when update needed
@@ -283,7 +285,7 @@ latranges <- data.frame(matrix(unlist(lat_ranges), ncol = 2, byrow = T))
 lonranges <- data.frame(matrix(unlist(lon_ranges), ncol = 2, byrow = T))
 
 # Plot SST by area in each month
-sst_areas |>
+sst_areas %>%
   ggplot(aes(x = year, y = meanSST, group = as.factor(month), color = as.factor(month))) +
   geom_line() +
   scale_color_viridis(discrete = TRUE) +
@@ -295,17 +297,17 @@ sst_areas |>
   facet_wrap(~area, scale = "free_y") +
   NULL
 
-sst_areas <- sst_areas |> 
+sst_areas <- sst_areas %>% 
   mutate(date = paste(year, month, 15, sep = "-"),
          yday = yday(date),
          source = "errs",
-         month = as.numeric(month)) |> 
+         month = as.numeric(month)) %>% 
   rename(temp = meanSST)
 
 errs_dat <- sst_areas
 
 # Plot SST by month in each area
-errs_dat |>
+errs_dat %>%
   ggplot(aes(x = year, y = temp, group = as.factor(area), color = as.factor(area))) +
   geom_line() +
   scale_color_brewer(palette = "Set3") +
@@ -322,71 +324,71 @@ errs_dat |>
 all_temp <- bind_rows(log_dat, errs_dat, fish_dat)
 
 # See if we can compare the mean temperature in a time of the year that have overlap
-all_temp |> 
-  filter(area == "FB") |> 
+all_temp %>% 
+  filter(area == "FB") %>% 
   ggplot(aes(yday, fill = source)) + 
   facet_wrap(~year, scales = "free_y") + 
   geom_density(alpha = 0.5, color = NA)
 
 # Plot some overlapping year and areas
-all_temp |> 
-  filter(area == "VN" &  year > 1995) |> 
+all_temp %>% 
+  filter(area == "VN" &  year > 1995) %>% 
   ggplot(aes(yday, temp, color = source)) +
   geom_point() + 
   facet_wrap(~year)
 
-all_temp |> 
-  filter(area == "JM" & year < 1995 & year > 1975) |> 
+all_temp %>% 
+  filter(area == "JM" & year < 1995 & year > 1975) %>% 
   ggplot(aes(yday, temp, color = source)) +
   geom_point() + 
   facet_wrap(~year)
 
-all_temp |> 
-  filter(area == "FM" & year < 2000 & year > 1980) |> 
+all_temp %>% 
+  filter(area == "FM" & year < 2000 & year > 1980) %>% 
   ggplot(aes(yday, temp, color = source)) +
   geom_point() + 
   facet_wrap(~year)
 
 # Some examples: OK match but not in BT which makes sense because the ERSS data isn't fine scale enough
-all_temp |> 
-  filter(area == "FB" & year %in% c(1998:2001)) |> 
+all_temp %>% 
+  filter(area == "FB" & year %in% c(1998:2001)) %>% 
   ggplot(aes(yday, temp, color = source)) +
   geom_point() + 
   geom_line() + 
   facet_wrap(~year)
 
-all_temp |> 
-  filter(area == "SI_EK" & year %in% c(1998:2001)) |> 
+all_temp %>% 
+  filter(area == "SI_EK" & year %in% c(1998:2001)) %>% 
   ggplot(aes(yday, temp, color = source)) +
   geom_point() + 
   geom_line() + 
   facet_wrap(~year)
 
-all_temp |> 
-  filter(area == "BT" & year %in% c(1998:2001)) |> 
+all_temp %>% 
+  filter(area == "BT" & year %in% c(1998:2001)) %>% 
   ggplot(aes(yday, temp, color = source)) +
   geom_point() + 
   geom_line() + 
   facet_wrap(~year)
 
 # Take a close look at SI_EK 1995
-all_temp |> 
-  filter(source == "logger" & area == "SI_EK" & year == 1996) |> 
+all_temp %>% 
+  filter(source == "logger" & area == "SI_EK" & year == 1996) %>% 
   ggplot(aes(yday, temp)) +
   geom_point() + 
   facet_grid(area~year)
 
 # Filter the row of very low values - broken logger?
-all_temp |> 
-  filter(source == "logger" & area == "SI_EK" & year == 1996) |> 
-  mutate(keep = ifelse(temp < 6.54, "N", "Y")) |> 
+all_temp %>% 
+  filter(source == "logger" & area == "SI_EK" & year == 1996) %>% 
+  mutate(keep = ifelse(temp < 6.54, "N", "Y")) %>% 
   ggplot(aes(yday, temp, color = keep)) +
   geom_point() + 
   facet_grid(area~year)
 
-all_temp <- all_temp |>
-  mutate(keep = ifelse(source == "logger" & area == "SI_EK" & year == 1996 & temp < 6.54, "N", "Y")) |>
-  filter(keep == "Y") |>
+all_temp <- all_temp %>%
+  mutate(keep = ifelse(source == "logger" & area == "SI_EK" & year == 1996 & temp < 6.54, "N", "Y")) %>%
+  filter(keep == "Y") %>%
   select(-keep)
 ```
 
