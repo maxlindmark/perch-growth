@@ -5,15 +5,14 @@ This repo contains data and R code for collating and analyzing time series of ba
 
 ## Setup
 
-To simply view the analyses, download the .qmd or .html files. In order to reproduce the results:
+To simply view the analyses, download the .qmd or .html files. To reproduce the results:
 
-1. Fork the repository and clone to your machine (or download a local version)
+1. Fork the repository (or download a local version)
 
-2. Open R and set your working directory of the cloned repository (or just use RStudio projects)
+2. Open a new RStudio project and clone the fork (or open R and set your working directory of the cloned repository)
 
-3. This project is set up with [`renv`](https://rstudio.github.io/renv/articles/renv.html) to manage package dependencies. Inside R (and with your working directory set correctly) run `renv::restore()`. This will install the correct versions of all the packages needed to replicate our results. Packages are installed in a stand-alone project library for this paper, and will not affect your installed R packages anywhere else. 
+3. R-package dependencies and versions are handled with [`renv`](https://rstudio.github.io/renv/articles/renv.html). Simply run `renv::restore()` to install the correct versions of all the packages needed to replicate our results. Packages are installed in a stand-alone project library for this paper, and will not affect your installed R packages anywhere else. 
 
-Once you've successfully run `renv::restore()` you can reproduce our results by running R/main-analysis/food_competition.qmd and R/main-analysis/diet_overlap.qmd.
+Once you've successfully run `renv::restore()` you can reproduce our results by running R/main-analysis/01-fit-temp-models-predict.qmd and R/main-analysis/fit-vbge.qmd.
 
-Scripts for data preparation are found in prepare-data. Some files (e.g., environmental data) are too big for github, so currently only the cleaned and processed data are included here, which are formatted for this specific analysis. You can either view the .html files to see how raw data were handled or reach out to me to get the data needed for the scripts to run.
-
+Scripts for data preparation are found in prepare-data, but you can also jump straight to the analysis-scripts using data in data/for-analysis.
