@@ -53,6 +53,9 @@ df <- add_utm_columns(df, ll_names = c("lon", "lat"), units = "m")
 # Join in the full area names from df
 order <- left_join(order, df |> select(area, area_name))
 
+nareas <- length(unique(order$area)) + 2 # to skip the brightest colors that are hard to read
+colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(6,7)]
+
 # Set plot ranges (crop map)
 xmin <- 0
 xmax <- 700000
@@ -63,12 +66,12 @@ yrange <- ymax - ymin
 
 p1 <-
   ggplot(swe_coast_proj) +
-  geom_sf() +
+  geom_sf(color = "gray80") +
   labs(x = "Longitude", y = "Latitude") +
   xlim(xmin, xmax) +
   ylim(ymin, ymax) +
-  annotate("text", label = "SWEDEN", x = xmin + 0.23*xrange, y = ymin + 0.6*yrange,
-           color = "grey30", size = 4) +
+  annotate("text", label = "Sweden", x = xmin + 0.23*xrange, y = ymin + 0.6*yrange,
+           color = "gray50", size = 4) +
   geom_point(data = df, aes(X, Y, fill = factor(area_name, order$area_name)), size = 3, inherit.aes = FALSE,
              shape = 21, color = "white") +
   guides(color = "none", fill = "none") +
@@ -91,15 +94,15 @@ order_facet <- df |> arrange(desc(lat))
 
 p2 <- ggplot(vbg, aes(cohort, k_median, size = n, color = factor(area_full, levels = order$area_full),
                       fill = factor(area, levels = order$area))) + 
-  geom_point() +
+  geom_point(shape = 21) +
   theme_sleek() + 
   guides(fill = "none", color = "none", 
          size = guide_legend(override.aes = list(linetype = NA))) +
   labs(x = "Cohort", y = "Median von Bertalanffy growth coefficient (*k*)", size = "#individuals") +
   scale_size(range = c(0.01, 2.5)) +
   facet_wrap(~factor(area_full, levels = order_facet$area_full), ncol = 2) + 
-  scale_color_manual(values = colors, name = "Area") +
-  scale_fill_manual(values = colors, name = "Area") +
+  scale_color_manual(values = alpha(colors, alpha = 1), name = "Area") +
+  scale_fill_manual(values = alpha(colors, alpha = 0.6), name = "Area") +
   theme(legend.position = c(0.11, 0.96),
         legend.key.height = unit(0.01, 'cm'), 
         legend.text = element_text(size = 6),
@@ -110,5 +113,7 @@ p2 <- ggplot(vbg, aes(cohort, k_median, size = n, color = factor(area_full, leve
 p2
 
 p1 + p2
-  
 ggsave(paste0(home, "/figures/map_sample_size.pdf"), width = 17, height = 17, units = "cm")
+
+# p1 + (p2 & theme(strip.text = element_text(size = 7)))
+# ggsave(paste0(home, "/figures/for-talks/map_sample_size.pdf"), width = 15, height = 15, units = "cm")

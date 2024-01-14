@@ -37,8 +37,14 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
+# Text
+/text
+
 # R Environment Variables
 .Renviron
+
+# Longer versions of analysis-scripts
+*/long-versions/
 
 # pkgdown site
 docs/
@@ -48,6 +54,9 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Figures I don't need
+/figures/for-talks/
 
 # Data
 .Rproj.user

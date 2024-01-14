@@ -1,0 +1,345 @@
+---
+title: "Fit temperature models and predict growing season temperature"
+author: "Max Lindmark, Jan Ohlberger, Anna Gårdmark"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+format: 
+  html:
+    page-layout: full
+    embed-resources: true
+knitr: 
+  opts_chunk:
+    fig.align: center
+    out-width: 80%
+editor: source
+execute: 
+  echo: true
+  eval: true
+  cache: false
+---
+
+## Load libraries
+
+```{r libraries and functions}
+#| cache: false
+pkgs <- c("here","tidyverse", "tidylog", "RColorBrewer", "viridis", "sdmTMB", "sdmTMBextra", "patchwork", "RCurl", "tidylog") 
+
+# minpack.lm needed if using nlsLM()
+if(length(setdiff(pkgs,rownames(installed.packages()))) > 0){
+
+    install.packages(setdiff(pkgs, rownames(installed.packages())), dependencies = T)
+  
+  }
+
+invisible(lapply(pkgs, library,character.only = T))
+
+# devtools::install_github("seananderson/ggsidekick") # not on CRAN 
+library(ggsidekick)
+theme_set(theme_sleek())
+
+# Set path:
+home <- here::here()
+```
+
+Load cache
+
+```{r}
+# qwraps2::lazyload_cache_dir(path = paste0(home, "/R/analyze-data/01-fit-temp-models-predict_cache/html"))
+```
+
+## Read data
+
+```{r}
+d <- read_csv(paste0(home, "/output/temp_data_for_fitting.csv"))
+
+d <- d %>% mutate(area = as.factor(area),
+                 source_f = as.factor(source),
+                 year_f = as.factor(year)) %>% 
+  filter(!area %in% c("VN", "TH")) # VN: no logger data, TH: to short time series
+
+# Keep track of the years for which we have cohorts for matching with cohort data
+gdat <- readr::read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/for-analysis/dat.csv")
+
+gdat$area_cohort_age <- as.factor(paste(gdat$area, gdat$cohort, gdat$age_bc))
+
+gdat <- gdat %>%
+  group_by(area_cohort_age) %>% 
+  filter(n() > 10) %>% 
+  filter(age_catch > 3) %>% 
+  group_by(area) %>%
+  summarise(min = min(cohort),
+            max = max(cohort)) %>% 
+  arrange(min)
+
+d <- left_join(d, gdat, by = "area") %>%
+  mutate(area = as.factor(area),
+         growth_dat = ifelse(year >= min & year <= max, "Y", "N"))
+
+# Drop data in SI_HA and BT before onset of warming
+d <- d %>%
+  mutate(discard = "N",
+         discard = ifelse(area == "BT" & year <= 1980, "Y", discard),
+         discard = ifelse(area == "SI_HA" & year <= 1972, "Y", discard)) %>% 
+  filter(discard == "N")
+
+# Drop heated areas actually for the full plot
+df <- d %>% filter(!area %in% c("BT", "SI_HA"))
+```
+
+## Plot data
+
+```{r}
+df %>%
+  filter(growth_dat == "Y") %>% 
+  distinct(area, year, source) %>%
+  ggplot(aes(year, area, color = source)) +
+  geom_point(position = position_dodge(width = 0.4), shape = 15) + 
+  labs(y = "Site", x = "Year", color = "Source") + 
+  scale_color_brewer(palette = "Dark2") +
+  theme(legend.position = "bottom")
+
+ggsave(paste0(home, "/figures/supp/temp_sources.pdf"), width = 15, height = 11, units = "cm")
+```
+
+Area-specific models
+
+```{r}
+spec_preds <- list()
+res_list <- list()
+
+for(i in unique(d$area)) {
+  
+  dd <- d %>% filter(area == i)
+
+  if(unique(dd$area) %in% c("BS", "BT", "FB", "FM", "MU", "SI_EK")) { # RA, JM, HO, SI_HA remains
+    
+    mspec <- sdmTMB(temp ~ 0 + source_f + year_f + s(yday, bs = "cc"), 
+                    data = dd,
+                    family = student(df = 6),
+                    spatial = "off",
+                    spatiotemporal = "off",
+                    knots = list(yday = c(0.5, 364.5)),
+                    control = sdmTMBcontrol(newton_loops = 1)) 
+  
+  } else {
+    
+    mspec <- sdmTMB(temp ~ 0 + source_f + year_f + s(yday, bs = "cc"), 
+                    data = dd,
+                    family = student(df = 10),
+                    spatial = "off",
+                    spatiotemporal = "off",
+                    knots = list(yday = c(0.5, 364.5)),
+                    control = sdmTMBcontrol(newton_loops = 1)) 
+    
+  }
+  
+  sanity(mspec)
+
+  # Residuals
+  mcmc_res_msep <- residuals(mspec, type = "mle-mcmc",
+                             mcmc_samples = sdmTMBextra::predict_mle_mcmc(mspec,
+                                                                          mcmc_iter = 201,
+                                                                          mcmc_warmup = 200))
+  
+  dd$res <- as.vector(mcmc_res_msep)
+    
+  # Store residuals
+  res_list[[i]] <- dd
+  
+  print(ggplot(dd, aes(sample = mcmc_res_msep)) +
+    stat_qq(size = 0.75, shape = 21, fill = NA) +
+    stat_qq_line() +
+    labs(y = "Sample Quantiles", x = "Theoretical Quantiles", title = paste("Site = ", i)) + 
+    theme(aspect.ratio = 1))
+  
+  # Predict on new data
+  nd_area <- data.frame(expand.grid(yday = seq(min(dd$yday), max(dd$yday), by = 1),
+                                    area = unique(dd$area),
+                                    source = unique(dd$source_f),
+                                    year = unique(dd$year))) %>%
+    mutate(source_f = as.factor(source),
+           year_f = as.factor(year)) %>% 
+    left_join(gdat, by = "area") %>% 
+    mutate(area = as.factor(area),
+           growth_dat = ifelse(year >= min & year <= max, "Y", "N"))
+  
+  nd_area$pred <- predict(mspec, newdata = nd_area)$est
+
+  # Save!
+  spec_preds[[i]] <- nd_area
+  
+}
+
+nd_area <- dplyr::bind_rows(spec_preds)
+area_res <- dplyr::bind_rows(res_list)
+
+# Plot residuals
+dfs <- data.frame(area = c("BS", "BT", "FB", "FM", "MU", "SI_EK", "RA", "JM", "HO", "SI_HA"),
+                  df = c(rep("\u03BD = 6", 7), rep("\u03BD = 10", 3)))
+  
+area_res %>% 
+  ggplot(aes(sample = res)) +
+  stat_qq(size = 0.75, shape = 21, fill = NA) +
+  facet_wrap(~area) +
+  stat_qq_line() +
+  labs(y = "Sample Quantiles", x = "Theoretical Quantiles") +
+  geom_text(data = dfs, aes(label = df, hjust = -0.1, vjust = 1.25), inherit.aes = FALSE,
+              x = -Inf, y = Inf, size = 2.6, color = "grey20") +
+  theme(aspect.ratio = 1)
+
+ggsave(paste0(home, "/figures/supp/qq_temp_area.pdf"), width = 17, height = 17, units = "cm", device = cairo_pdf)
+
+# In order to have a lower temperature in before-nuclear times (without any data to inform that), we can use the nearby areas.. so FM informs BT prior to nuclear
+nd_area_sub <- nd_area %>% 
+  mutate(keep = "N",
+         keep = ifelse(area == "FM" & year <= 1980, "Y", keep), # use FM instead of BT
+         keep = ifelse(area == "SI_EK" & year <= 1972, "Y", keep)) %>% # use SI_EK instead of SI_HA
+  filter(keep == "Y") %>% # Now change the labels to BT and SI_EK...
+  mutate(area = ifelse(area == "FM", "BT", "SI_HA"))
+
+# Bind rows and plot only the temperature series we will use for growth modelling
+nd_area <- bind_rows(nd_area, nd_area_sub) %>%
+  select(-keep) %>% 
+  mutate(growth_dat = ifelse(area == "SI_HA" & year %in% c(1966, 1967), "Y", growth_dat)) # SI_EK and SI_HA do not have the same starting years, so we can't use allo columns from SI_EK
+
+nd_area %>% 
+  filter(area %in% c("FM", "BT", "SI_EK", "SI_HA")) %>% 
+  filter(year <= 1980 & year >= 1966) %>% 
+  group_by(area, year) %>% 
+  summarise(mean_temp = mean(pred)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = area, values_from = mean_temp)
+```
+
+Plot detailed exploration of predictions
+
+```{r}
+# Loop trough all areas, plot temperature as a function of yday, color by data source, facet by year
+
+nd_area %>% 
+  ggplot(aes(yday, y = year, fill = pred, color = pred)) +
+  geom_raster() +
+  facet_wrap(~area, ncol = 4) +
+  scale_fill_viridis(option = "magma") +
+  scale_color_viridis(option = "magma") +
+  labs(x = "Day-of-the-year", y = "Year", color = "Predicted SST (°C)", fill = "Predicted SST (°C)") + 
+  theme(legend.position = c(0.78, 0.14))
+  
+ggsave(paste0(home, "/figures/supp/temp_pred_yday_area.pdf"), width = 17, height = 17, units = "cm")
+ggsave(paste0(home, "/figures/for-talks/temp_pred_yday_area.pdf"), width = 14, height = 14, units = "cm")
+
+for(i in unique(nd_area$area)) {
+  
+  plotdat <- nd_area %>% filter(area == i)
+  
+  print(
+    ggplot(plotdat, aes(yday, pred, color = source)) + 
+      scale_color_brewer(palette = "Dark2") + 
+      facet_wrap(~year) + 
+      geom_point(data = filter(d, area == i & year > min(plotdat$year)), size = 0.2,
+                 aes(yday, temp, color = source)) + 
+      geom_line(linewidth = 0.3) + 
+      labs(title = paste("Site = ", i), color = "", linetype = "") + 
+      guides(color = guide_legend(title.position = "top", title.hjust = 0.5)) + 
+      theme_sleek(base_size = 8) +
+      theme(legend.position = "bottom", 
+            legend.direction = "horizontal",
+            legend.spacing.y = unit(-0.3, "cm")) + 
+      labs(x = "Day of the year", y = "Predicted SST (°C)")
+  )
+  
+  ggsave(paste0(home, "/figures/supp/temp_pred_yday_area_", i, ".pdf" ), width = 17, height = 17, units = "cm")
+  
+}
+
+# Same but trimmed
+for(i in unique(nd_area$area)) {
+  
+  plotdat <- nd_area %>% filter(area == i) %>% filter(growth_dat == "Y")
+  
+  print(
+    ggplot(plotdat, aes(yday, pred, color = source)) + 
+      scale_color_brewer(palette = "Dark2") + 
+      facet_wrap(~year) + 
+      geom_point(data = filter(d, area == i & year > min(plotdat$year)), size = 0.2,
+                 aes(yday, temp, color = source)) + 
+      geom_line(linewidth = 0.3) + 
+      labs(title = paste("Site = ", i), color = "", linetype = "") + 
+      guides(color = guide_legend(title.position = "top", title.hjust = 0.5)) + 
+      theme_sleek(base_size = 8) +
+      theme(#legend.position = c(0.8, 0.08), 
+            legend.position = "bottom", 
+            legend.direction = "horizontal",
+            legend.spacing.y = unit(-0.3, "cm")) + 
+      labs(x = "Day of the year", y = "Predicted SST (°C)")
+  )
+  
+  ggsave(paste0(home, "/figures/supp/temp_pred_yday_area_trimmed_", i, ".pdf" ), width = 17, height = 17, units = "cm")
+  
+}
+```  
+
+Plot summarized data and predictions
+
+```{r}
+# Summarise data
+dsum <- d %>% 
+  group_by(year, area, source) %>% 
+  summarise(temp = mean(temp)) %>% 
+  mutate(type = "data")
+
+preds_area <- nd_area %>% 
+  filter(growth_dat == "Y" & source == "logger") %>% 
+  group_by(area, year) %>% 
+  summarise(temp = mean(pred)) %>% 
+  mutate(model = "area model")
+```
+
+Make final plot using the area-specific model
+
+```{r}
+# Overall t_opt from 02-fit-vbge.qmd! Update when I got final model!
+topt_lwr <- 8.771866
+topt <- 9.468607
+topt_upr <- 10.304697
+
+# Add latitude
+area <- c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA", "SI_EK", "SI_HA")
+nareas <- length(area)
+lat <- c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4)
+lon <- c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7)
+area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) %>%
+  mutate_at(c("lat","lon"), as.numeric) %>% 
+  arrange(desc(lat))
+
+ggplot(preds_area, aes(year, temp, color = temp)) + 
+  facet_wrap(~factor(area, levels = area_attr$area), ncol = 4) + 
+  geom_hline(yintercept = topt_lwr, linewidth = 0.3, linetype = 2, color = "tomato3", alpha = 0.3) +
+  geom_hline(yintercept = topt, linewidth = 0.3, linetype = 1, color = "tomato3", alpha = 0.3) +
+  geom_hline(yintercept = topt_upr, linewidth = 0.3, linetype = 2, color = "tomato3", alpha = 0.3) +
+  geom_line(linewidth = 0.6) +
+  labs(x = "Year", y = "Model-predicted annual average temperature") + 
+  scale_color_viridis(option = "magma", name = "Site") +
+  guides(color = "none") 
+
+ggsave(paste0(home, "/figures/annual_average_temperature.pdf"), width = 17, height = 12, units = "cm")
+#ggsave(paste0(home, "/figures/for-talks/annual_average_temperature.pdf"), width = 15, height = 10, units = "cm")
+
+# Check year range
+preds_area %>% 
+  group_by(area) %>% 
+  summarise(min = min(year),
+            max = max(year)) %>% 
+  arrange(min)
+
+# Check temperature range
+preds_area %>% 
+  group_by(area) %>% 
+  summarise(min = min(temp),
+            max = max(temp)) %>% 
+  arrange(min)
+```
+
+```{r}
+# Save prediction df
+write_csv(preds_area, paste0(home, "/output/gam_predicted_temps.csv"))
+```
