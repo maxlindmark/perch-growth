@@ -26,6 +26,8 @@ pkgs <- c("tidyverse", "tidylog", "broom", "RColorBrewer", "viridis",
 
 invisible(lapply(pkgs, library,character.only = T))
 
+library(brms)
+
 # devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
 library(ggsidekick)
 theme_set(theme_sleek())
