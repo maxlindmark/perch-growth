@@ -32,8 +32,6 @@ knitr::opts_chunk$set(
 ```{r libraries}
 #| cache=FALSE
 
-# devtools::install_github("seananderson/ggsidekick") # not on CRAN 
-library(ggsidekick); theme_set(theme_sleek())
 library(tidyverse)
 library(tidylog)
 library(RColorBrewer)
@@ -46,6 +44,9 @@ library(ggridges)
 library(rnaturalearth)
 library(rnaturalearthdata)
 library(forcats)
+
+# devtools::install_github("seananderson/ggsidekick") # not on CRAN 
+library(ggsidekick); theme_set(theme_sleek())
 ```
 
 ## Read data

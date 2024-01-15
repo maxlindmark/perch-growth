@@ -58,6 +58,9 @@ rsconnect/
 # Figures I don't need
 /figures/for-talks/
 
+# Extra analysis
+R/supp-analysis/
+
 # Data
 .Rproj.user
 .Rhistory

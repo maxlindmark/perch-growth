@@ -21,8 +21,6 @@ execute:
 
 ```{r}
 #| cache: false
-# devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
-library(ggsidekick); theme_set(theme_sleek())
 library(tidyverse)
 library(tidylog)
 library(broom)
@@ -34,6 +32,10 @@ library(ggtext)
 library(brms)
 library(modelr)
 library(tidybayes)
+library(ggridges)
+
+# devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
+library(ggsidekick); theme_set(theme_sleek())
 
 # Load functions
 home <- here::here()

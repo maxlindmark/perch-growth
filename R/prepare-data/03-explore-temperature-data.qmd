@@ -33,8 +33,6 @@ knitr::opts_chunk$set(
 #| cache=FALSE
 pkgs <- c("here", "tidyverse", "readxl", "RColorBrewer", "ISOweek", "viridis", "ncdf4", "reshape2") 
 
-# devtools::install_github("seananderson/ggsidekick") # not on CRAN 
-library(ggsidekick); theme_set(theme_sleek())
 library(here)
 library(tidyverse)
 library(readxl)
@@ -43,6 +41,9 @@ library(viridis)
 library(ISOweek)
 library(ncdf4)
 library(reshape2)
+
+# devtools::install_github("seananderson/ggsidekick") # not on CRAN 
+library(ggsidekick); theme_set(theme_sleek())
 
 # Load functions
 home <- here::here()
