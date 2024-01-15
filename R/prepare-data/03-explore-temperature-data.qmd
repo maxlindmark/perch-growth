@@ -33,13 +33,6 @@ knitr::opts_chunk$set(
 #| cache=FALSE
 pkgs <- c("here", "tidyverse", "readxl", "RColorBrewer", "ISOweek", "viridis", "ncdf4", "reshape2") 
 
-# minpack.lm needed if using nlsLM()
-if(length(setdiff(pkgs,rownames(installed.packages()))) > 0){
-
-    install.packages(setdiff(pkgs,rownames(installed.packages())),dependencies = T)
-  
-  }
-
 invisible(lapply(pkgs, library, character.only = T))
 
 # devtools::install_github("seananderson/ggsidekick") # not on CRAN 
@@ -265,6 +258,7 @@ area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) %>%
   mutate_at(c("lat", "lon"), as.numeric)
 
 # Download ERSST data - only run when update needed
+# Since the ERSST file is to big for github, you have to run the code below to re-load it and save it in the folder specified in the for loop, or simply use the output of this script which is on github.
 # sst_dat_all <- get_ersst_data(years=seq(1940,2022),data.dir=paste0(home,"/data"), latrange=c(55,66),lonrange=c(15,23))
 
 # SST based on ERSST data with relatively low spatial resolution (2x2 degrees)
@@ -396,6 +390,6 @@ all_temp <- all_temp %>%
 
 ```{r}
 # Save data for model fitting
-write_csv(all_temp, paste0(home, "/output/temp_data_for_fitting.csv"))
+write_csv(all_temp, paste0(home, "/data/for-analysis/temp_data_for_fitting.csv"))
 ```
 

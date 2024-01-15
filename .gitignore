@@ -65,6 +65,10 @@ rsconnect/
 .Ruserdata
 /data/*
 !data/for-analysis/
+!data/temp-data/
+!data/temp-data-fishing/
+!data/temp-data-fishing-firre/
+
 .DS_Store
 R/.DS_Store
 .DS_Store~5f3b1739122fb513df3eb9f1cbf6f32701e2f2a3

@@ -23,13 +23,6 @@ execute:
 #| cache: false
 pkgs <- c("here","tidyverse", "tidylog", "RColorBrewer", "viridis", "sdmTMB", "sdmTMBextra", "patchwork", "RCurl", "tidylog") 
 
-# minpack.lm needed if using nlsLM()
-if(length(setdiff(pkgs,rownames(installed.packages()))) > 0){
-
-    install.packages(setdiff(pkgs, rownames(installed.packages())), dependencies = T)
-  
-  }
-
 invisible(lapply(pkgs, library,character.only = T))
 
 # devtools::install_github("seananderson/ggsidekick") # not on CRAN 
@@ -49,7 +42,7 @@ Load cache
 ## Read data
 
 ```{r}
-d <- read_csv(paste0(home, "/output/temp_data_for_fitting.csv"))
+d <- read_csv(paste0(home, "/data/for-analysis/temp_data_for_fitting.csv"))
 
 d <- d %>% mutate(area = as.factor(area),
                  source_f = as.factor(source),

@@ -34,13 +34,6 @@ knitr::opts_chunk$set(
 pkgs <- c("tidyverse", "tidylog", "rnaturalearth", "rnaturalearthdata", "RColorBrewer",
           "forcats", "viridis", "broom", "rgdal", "ggmap", "sf", "ggridges") 
 
-## minpack.lm needed if using nlsLM()
-if(length(setdiff(pkgs,rownames(installed.packages()))) > 0){
-
-    install.packages(setdiff(pkgs, rownames(installed.packages())),dependencies = T)
-  
-  }
-
 invisible(lapply(pkgs, library, character.only = T))
 
 # devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
