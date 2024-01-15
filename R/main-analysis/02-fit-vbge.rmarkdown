@@ -17,7 +17,9 @@ execute:
   cache: false
 ---
 
+
 ## Load libraries
+
 
 ```{r}
 #| cache: false
@@ -36,13 +38,17 @@ fxn <- list.files(paste0(home, "/R/functions"))
 invisible(sapply(FUN = source, paste0(home, "/R/functions/", fxn)))
 ```
 
+
 Load cache
+
 
 ```{r}
 # qwraps2::lazyload_cache_dir(path = paste0(home, "/R/analyze-data/02-fit-vbge_cache/html"))
 ```
 
+
 ## Read and trim data
+
 
 ```{r}
 #| cache: false
@@ -93,7 +99,9 @@ area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) %>%
 
 ```
 
+
 ## Fit VBGE models
+
 
 ```{r}
 # Get individual growth parameters (functions: VBGF/Gompertz,nls_out,fit_nls)
@@ -190,7 +198,9 @@ ggplot() +
 # No difference at all really. We should probably just discuss that with this model, achieving biologically reasonable parameter values and a good fit to data are sometimes two different things. In our case, we just want a representative value of the growth (as in time to reach average maximum size in the population) that accounts for the entire growth trajectory of an individual, for each area and cohort.
 ```
 
+
 Calculate sample size
+
 
 ```{r}
 sample_size <- IVBG %>%
@@ -210,7 +220,9 @@ sample_size %>%
 write_csv(sample_size, paste0(home, "/output/sample_size.csv"))
 ```
 
+
 ## Add GAM-predicted temperature to growth models
+
 
 ```{r}
 #| cache: false
@@ -244,7 +256,9 @@ nareas <- length(unique(order$area)) + 2 # to skip the brightest colors that are
 colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(6,7)]
 ```
 
+
 ## Plot VBGE fits
+
 
 ```{r}
 #| cache: false
@@ -306,7 +320,9 @@ fits_ind / k2 + plot_annotation(tag_levels = "A") #+ plot_layout(heights = c(1, 
 ggsave(paste0(home, "/figures/vb_pars_fits.pdf" ), width = 17, height = 18, units = "cm")
 ```
 
+
 ## Fit Sharpe-Schoolfield model to k
+
 
 ```{r}
 dat <- VBG %>%
@@ -314,7 +330,9 @@ dat <- VBG %>%
   rename(rate = k_median)
 ```
 
+
 ## Can we fit a single Sharpe Schoolfield with area-specific parameters with `brms`?
+
 
 ```{r}
 # Again, here are the data we are fitting:
@@ -433,7 +451,9 @@ ggplot(dist, aes(value, fill = type)) +
   labs(fill = "")
 ```
 
+
 Ok, seems to work with priors and everything. They are roughly as broad as can be and still have a fit. Now fit the full model, with random area effects, more iterations and chains!
+
 
 ```{r}
 # Now look at random area effects!
@@ -459,7 +479,9 @@ fitbs <- brm(
 print(fitbs, digits = 4)
 ```
 
+
 Inspect the model
+
 
 ```{r}
 #| cache: false
@@ -539,7 +561,9 @@ ggplot(dist, aes(value, fill = type)) +
 ggsave(paste0(home, "/figures/supp/sharpe_brms_prior.pdf" ), width = 17, height = 17, units = "cm")
 ```
 
+
 Sensitivity with respect to priors
+
 
 ```{r}
 # Set a bunch of priors with different sigmas
@@ -698,7 +722,9 @@ dist_df %>%
   as.data.frame()
 ```
 
+
 Calculate T_opt
+
 
 ```{r}
 ts <- dat %>% 
@@ -772,7 +798,9 @@ ggsave(paste0(home, "/figures/sharpe_school_bayes.pdf"), width = 17, height = 17
 #ggsave(paste0(home, "/figures/for-talks/sharpe_school_bayes.pdf"), width = 14, height = 14, units = "cm")
 ```
 
+
 ### Area-specific T_opts as a ridgeplot
+
 
 ```{r}
 #| cache: false
@@ -878,7 +906,9 @@ diff <- ggplot(t_opt_a_sum, aes(mean_temp, diff, label = area)) +
 ggsave(paste0(home, "/figures/t_opt_ridges.pdf" ), width = 17, height = 8, units = "cm", device = cairo_pdf)
 ```
 
+
 ### Plot area specific predictions
+
 
 ```{r}
 #| cache: false
