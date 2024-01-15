@@ -21,16 +21,19 @@ execute:
 
 ```{r}
 #| cache: false
-pkgs <- c("tidyverse", "tidylog", "broom", "RColorBrewer", "viridis",
-          "minpack.lm", "patchwork", "ggtext", "brms", "tidybayes", "modelr")
-
-invisible(lapply(pkgs, library,character.only = T))
-
-library(brms)
-
 # devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
-library(ggsidekick)
-theme_set(theme_sleek())
+library(ggsidekick); theme_set(theme_sleek())
+library(tidyverse)
+library(tidylog)
+library(broom)
+library(RColorBrewer)
+library(viridis)
+library(minpack.lm)
+library(patchwork)
+library(ggtext)
+library(brms)
+library(modelr)
+library(tidybayes)
 
 # Load functions
 home <- here::here()

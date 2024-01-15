@@ -21,13 +21,18 @@ execute:
 
 ```{r libraries and functions}
 #| cache: false
-pkgs <- c("here","tidyverse", "tidylog", "RColorBrewer", "viridis", "sdmTMB", "sdmTMBextra", "patchwork", "RCurl", "tidylog") 
-
-invisible(lapply(pkgs, library,character.only = T))
-
 # devtools::install_github("seananderson/ggsidekick") # not on CRAN 
-library(ggsidekick)
-theme_set(theme_sleek())
+library(ggsidekick); theme_set(theme_sleek())
+library(here)
+library(tidyverse)
+library(tidylog)
+library(RColorBrewer)
+library(viridis)
+library(sdmTMB)
+library(sdmTMBextra)
+library(patchwork)
+library(RCurl)
+library(tidylog)
 
 # Set path:
 home <- here::here()

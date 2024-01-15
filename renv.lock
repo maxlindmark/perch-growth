@@ -77,6 +77,16 @@
       ],
       "Hash": "77b5189f5272ae2b21e3ac2175ad107c"
     },
+    "ISOweek": {
+      "Package": "ISOweek",
+      "Version": "0.6-2",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "stringr"
+      ],
+      "Hash": "ad7e2b013b9379cb560caa9b168202f0"
+    },
     "KernSmooth": {
       "Package": "KernSmooth",
       "Version": "2.23-20",
@@ -163,6 +173,18 @@
         "R"
       ],
       "Hash": "45f0398006e83a5b10b72a90663d8d8c"
+    },
+    "RCurl": {
+      "Package": "RCurl",
+      "Version": "1.98-1.14",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "bitops",
+        "methods"
+      ],
+      "Hash": "47f648d288079d0c696804ad4e55197e"
     },
     "Rcpp": {
       "Package": "Rcpp",
@@ -272,6 +294,18 @@
       ],
       "Hash": "10705eec964349f270504754d8fe8ef1"
     },
+    "arrayhelpers": {
+      "Package": "arrayhelpers",
+      "Version": "1.1-0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "methods",
+        "svUnit",
+        "utils"
+      ],
+      "Hash": "3d4e52d458784c335af3846f2de64f75"
+    },
     "askpass": {
       "Package": "askpass",
       "Version": "1.1",
@@ -372,6 +406,13 @@
         "utils"
       ],
       "Hash": "9fe98599ca456d6552421db0d6772d8f"
+    },
+    "bitops": {
+      "Package": "bitops",
+      "Version": "1.0-7",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "b7d8d8ee39869c18d8846a184dd8a1af"
     },
     "blob": {
       "Package": "blob",
@@ -1134,6 +1175,31 @@
       ],
       "Hash": "15e9634c0fcd294799e9b2e929ed1b86"
     },
+    "ggdist": {
+      "Package": "ggdist",
+      "Version": "3.3.1",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "Rcpp",
+        "cli",
+        "distributional",
+        "dplyr",
+        "ggplot2",
+        "glue",
+        "grid",
+        "numDeriv",
+        "quadprog",
+        "rlang",
+        "scales",
+        "tibble",
+        "tidyselect",
+        "vctrs",
+        "withr"
+      ],
+      "Hash": "1ff5363a7be601af61cf89ef60e428d3"
+    },
     "ggh4x": {
       "Package": "ggh4x",
       "Version": "0.2.4",
@@ -1151,6 +1217,34 @@
         "vctrs"
       ],
       "Hash": "31191cd4554699b1a22f3114e6344c9e"
+    },
+    "ggmap": {
+      "Package": "ggmap",
+      "Version": "4.0.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "bitops",
+        "cli",
+        "digest",
+        "dplyr",
+        "ggplot2",
+        "glue",
+        "grid",
+        "httr",
+        "jpeg",
+        "magrittr",
+        "plyr",
+        "png",
+        "purrr",
+        "rlang",
+        "scales",
+        "stringr",
+        "tibble",
+        "tidyr"
+      ],
+      "Hash": "031b5eab3c43bf1a7cea0498e4d89233"
     },
     "ggplot2": {
       "Package": "ggplot2",
@@ -2299,6 +2393,16 @@
       ],
       "Hash": "e3bd5ade848251657381d2a0668def59"
     },
+    "quadprog": {
+      "Package": "quadprog",
+      "Version": "1.5-8",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R"
+      ],
+      "Hash": "5f919ae5e7f83a6f91dcf2288943370d"
+    },
     "quantreg": {
       "Package": "quantreg",
       "Version": "5.95",
@@ -2884,6 +2988,17 @@
       ],
       "Hash": "aea2b8787db7088ba50ba389848569ee"
     },
+    "svUnit": {
+      "Package": "svUnit",
+      "Version": "1.0.6",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "utils"
+      ],
+      "Hash": "894d0aff9585344af4ab78e2b4d60ab7"
+    },
     "sys": {
       "Package": "sys",
       "Version": "3.4.1",
@@ -2989,6 +3104,31 @@
         "vctrs"
       ],
       "Hash": "a84e2cc86d07289b3b6f5069df7a004c"
+    },
+    "tidybayes": {
+      "Package": "tidybayes",
+      "Version": "3.0.6",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "arrayhelpers",
+        "cli",
+        "coda",
+        "dplyr",
+        "ggdist",
+        "ggplot2",
+        "magrittr",
+        "methods",
+        "posterior",
+        "rlang",
+        "tibble",
+        "tidyr",
+        "tidyselect",
+        "vctrs",
+        "withr"
+      ],
+      "Hash": "3853596458d8b9c81f7b39ee920c5319"
     },
     "tidylog": {
       "Package": "tidylog",

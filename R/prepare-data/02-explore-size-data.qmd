@@ -31,14 +31,21 @@ knitr::opts_chunk$set(
 
 ```{r libraries}
 #| cache=FALSE
-pkgs <- c("tidyverse", "tidylog", "rnaturalearth", "rnaturalearthdata", "RColorBrewer",
-          "forcats", "viridis", "broom", "rgdal", "ggmap", "sf", "ggridges") 
 
-invisible(lapply(pkgs, library, character.only = T))
-
-# devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
-library(ggsidekick)
-theme_set(theme_sleek())
+# devtools::install_github("seananderson/ggsidekick") # not on CRAN 
+library(ggsidekick); theme_set(theme_sleek())
+library(tidyverse)
+library(tidylog)
+library(RColorBrewer)
+library(viridis)
+library(broom)
+library(rgdal)
+library(ggmap)
+library(sf)
+library(ggridges)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(forcats)
 ```
 
 ## Read data
