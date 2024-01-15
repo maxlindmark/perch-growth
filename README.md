@@ -5,13 +5,13 @@ This repo contains data and R code for collating and analyzing time series of ba
 
 ## Setup
 
-To simply view the analyses, download the .qmd or .html files. To reproduce the results:
+To simply view the analyses, download the .qmd or .html files. To reproduce the results, download a zip of the repository and work locally within the RStudio project or just with R setting the project folder as your working directory. Alternatively, you can:
 
-1. Fork the repository (or download a local version)
+1. Fork the repository on GitHub
 
-2. Open a new RStudio project and clone the fork (or open R and set your working directory of the cloned repository)
+2. Create a new RStudio project and clone your fork
 
-3. R-package dependencies and versions are handled with [`renv`](https://rstudio.github.io/renv/articles/renv.html). Simply run `renv::restore()` to install the correct versions of all the packages needed to replicate our results. Packages are installed in a stand-alone project library for this paper, and will not affect your installed R packages anywhere else. 
+R-package dependencies and versions are handled with [`renv`](https://rstudio.github.io/renv/articles/renv.html). Simply run `renv::restore()` to install the correct versions of all the packages needed to replicate our results. Packages are installed in a stand-alone project library for this paper, and will not affect your installed R packages anywhere else. 
 
 Once you've successfully run `renv::restore()` you can reproduce our results by running R/main-analysis/01-fit-temp-models-predict.qmd and R/main-analysis/02-fit-vbge.qmd
 
