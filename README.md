@@ -13,6 +13,6 @@ To simply view the analyses, download the .qmd or .html files. To reproduce the 
 
 3. R-package dependencies and versions are handled with [`renv`](https://rstudio.github.io/renv/articles/renv.html). Simply run `renv::restore()` to install the correct versions of all the packages needed to replicate our results. Packages are installed in a stand-alone project library for this paper, and will not affect your installed R packages anywhere else. 
 
-Once you've successfully run `renv::restore()` you can reproduce our results by running R/main-analysis/01-fit-temp-models-predict.qmd and R/main-analysis/fit-vbge.qmd.
+Once you've successfully run `renv::restore()` you can reproduce our results by running R/main-analysis/01-fit-temp-models-predict.qmd and R/main-analysis/02-fit-vbge.qmd
 
-Scripts for data preparation are found in prepare-data, but you can also jump straight to the analysis-scripts using data in data/for-analysis.
+Scripts for data preparation are found in prepare-data. This repository contains all raw files needed except ERSST data because it's too big. The code to download it again is in the script though. You can also jump straight to the analysis-scripts using data in data/for-analysis, where output from data preparation scripts are stored.
