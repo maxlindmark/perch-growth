@@ -25,11 +25,11 @@ pkgs <- c("tidyverse", "tidylog", "rTPC", "nls.multstart", "broom", "RColorBrewe
           "viridis", "minpack.lm", "patchwork", "ggtext", "brms", "tidybayes", "modelr", "investr")
 
 # minpack.lm needed if using nlsLM()
-if(length(setdiff(pkgs, rownames(installed.packages()))) > 0){
-
-    install.packages(setdiff(pkgs, rownames(installed.packages())), dependencies = T)
-  
-  }
+# if(length(setdiff(pkgs, rownames(installed.packages()))) > 0){
+# 
+#     install.packages(setdiff(pkgs, rownames(installed.packages())), dependencies = T)
+#   
+#   }
 
 invisible(lapply(pkgs, library,character.only = T))
 
