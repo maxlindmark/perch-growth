@@ -51,7 +51,7 @@ df <- data.frame(area = c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA",
 df <- add_utm_columns(df, ll_names = c("lon", "lat"), units = "m")
 
 # Join in the full area names from df
-order <- left_join(order, df |> select(area, area_name))
+order <- left_join(order, df %>% select(area, area_name))
 
 nareas <- length(unique(order$area)) + 2 # to skip the brightest colors that are hard to read
 colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(6,7)]
@@ -86,11 +86,11 @@ p1
 
 vbg <- left_join(vbg, order, by = "area")
 
-vbg <- vbg |> mutate(area_full = paste(area_name, paste0("(", area, ")")))
-order <- order |> mutate(area_full = paste(area_name, paste0("(", area, ")")))
-df <- df |> mutate(area_full = paste(area_name, paste0("(", area, ")")))
+vbg <- vbg %>% mutate(area_full = paste(area_name, paste0("(", area, ")")))
+order <- order %>% mutate(area_full = paste(area_name, paste0("(", area, ")")))
+df <- df %>% mutate(area_full = paste(area_name, paste0("(", area, ")")))
 
-order_facet <- df |> arrange(desc(lat))
+order_facet <- df %>% arrange(desc(lat))
 
 p2 <- ggplot(vbg, aes(cohort, k_median, size = n, color = factor(area_full, levels = order$area_full),
                       fill = factor(area, levels = order$area))) + 
