@@ -2,7 +2,7 @@
 # Map plot
 library(rnaturalearth)
 library(rnaturalearthdata)
-library(rgdal)
+#library(rgdal)
 library(tidyverse)
 library(sf); sf::sf_use_s2(FALSE) # throws error otherwise
 library(sdmTMB)
@@ -20,7 +20,7 @@ home <- here::here()
 ymin = 53; ymax = 69; xmin = 5; xmax = 36
 
 map_data <- rnaturalearth::ne_countries(
-  scale = "medium",
+  scale = "large",
   returnclass = "sf", continent = "europe")
 
 # Crop the polygon for plotting and efficiency:
