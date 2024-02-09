@@ -2,7 +2,6 @@
 # Map plot
 library(rnaturalearth)
 library(rnaturalearthdata)
-#library(rgdal)
 library(tidyverse)
 library(sf); sf::sf_use_s2(FALSE) # throws error otherwise
 library(sdmTMB)
