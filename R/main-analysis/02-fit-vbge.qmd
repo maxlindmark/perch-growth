@@ -21,6 +21,8 @@ execute:
 
 ```{r}
 #| cache: false
+#| message: false
+#| warning: false
 library(tidyverse)
 library(tidylog)
 library(broom)
@@ -33,6 +35,7 @@ library(brms)
 library(modelr)
 library(tidybayes)
 library(ggridges)
+library(performance)
 
 # devtools::install_github("seananderson/ggsidekick") ## not on CRAN 
 library(ggsidekick); theme_set(theme_sleek())
@@ -63,14 +66,16 @@ d$area_cohort <- as.factor(paste(d$area, d$cohort))
 
 d <- d %>%
   group_by(area_cohort) %>% 
-  filter(n() > 100)
+  filter(n() > 100) %>% 
+  ungroup()
 
 # Minimum number of observations per area, cohort, and age
 d$area_cohort_age <- as.factor(paste(d$area, d$cohort, d$age_bc))
 
 d <- d %>%
   group_by(area_cohort_age) %>% 
-  filter(n() > 10)
+  filter(n() > 10) %>% 
+  ungroup()
 
 # Minimum number of cohorts in a given area
 cnt <- d %>%
@@ -106,8 +111,23 @@ area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) %>%
 # Get individual growth parameters (functions: VBGF/Gompertz,nls_out,fit_nls)
 IVBG <- d %>%
   group_by(ID) %>%
-  summarize(nls_out(fit_nls(length_mm, age_bc, min_nage = 5, model = "VBGF")))
+  summarize(nls_out(fit_nls(length_mm, age_bc, min_nage = 5, model = "VBGF"))) %>% 
+  ungroup()
 ```
+
+```{r}
+# Test what's going on ... 
+
+# expand_grid(k = c(0.1, 0.2),
+#             linf = c(300, 400)) %>% 
+#   crossing(age_bc = 1:100) %>% 
+#   mutate(length_mm_pred = linf*(1-exp(-k*age_bc)),
+#          group = paste0("k = ", k, " and Linf = ", linf)) %>% 
+#   ggplot(aes(age_bc, length_mm_pred, color = group)) + 
+#   geom_line()
+
+```
+
 
 ```{r}
 #| cache: false
@@ -118,34 +138,8 @@ IVBG <- IVBG %>%
          k_upr = k + 1.96*k_se,
          linf_lwr = linf - 1.96*linf_se,
          linf_upr = linf + 1.96*linf_se,
+         A = k*linf*0.65,
          row_id = row_number())
-
-# Plot all K's
-IVBG %>%
-  #filter(row_id < 5000) %>%
-  ggplot(aes(row_id, k, ymin = k_lwr, ymax = k_upr)) +
-  geom_point(alpha = 0.2) +
-  geom_errorbar(alpha = 0.2) +
-  NULL
-
-# Plot all L_inf's
-IVBG %>%
-  #filter(row_id < 5000) %>%
-  ggplot(aes(row_id, linf, ymin = linf_lwr, ymax = linf_upr)) +
-  geom_point(alpha = 0.2) +
-  geom_errorbar(alpha = 0.2) +
-  NULL
-
-# We can also consider removing individuals where the SE of k is larger than the fit
-IVBG %>%
-  #mutate(keep = ifelse(k > quantile(k_se, probs = 0.95), "N", "Y")) %>%
-  mutate(keep = ifelse(k < k_se, "N", "Y")) %>%
-  #filter(row_id < 10000) %>%
-  ggplot(aes(row_id, k, ymin = k_lwr, ymax = k_upr, color = keep)) +
-  geom_point(alpha = 0.5) +
-  facet_wrap(~keep, ncol = 1) +
-  geom_errorbar(alpha = 0.5) +
-  NULL
 
 # Add back cohort and area variables
 IVBG <- IVBG %>% 
@@ -155,46 +149,18 @@ IVBG <- IVBG %>%
 
 # Compare how the means and quantiles differ depending on this filtering
 IVBG_filter <- IVBG %>%
-  drop_na(k_se) %>%
-  #filter(k_se < quantile(k_se, probs = 0.95)) %>% 
-  filter(k_se < k)
+  filter(k_se < quantile(k_se, probs = 0.95))
 
 # Summarize growth coefficients by cohort and area
 VBG <- IVBG %>%
   filter(k_se < k) %>% # new!
   group_by(cohort, area) %>%
-  summarize(k_mean = mean(k, na.rm = T),
-            k_median = quantile(k, prob = 0.5, na.rm = T),
-            linf_median = quantile(linf, prob = 0.5, na.rm = T),
+  summarize(k = quantile(k, prob = 0.5, na.rm = T),
+            A = quantile(A, prob = 0.5, na.rm = T),
+            linf = quantile(linf, prob = 0.5, na.rm = T),
             k_lwr = quantile(k, prob = 0.05, na.rm = T),
             k_upr = quantile(k, prob = 0.95, na.rm = T)) %>% 
   ungroup()
-
-VBG_filter <- IVBG_filter %>%
-  group_by(cohort, area) %>%
-  summarize(k_mean = mean(k, na.rm = T),
-            k_median = quantile(k, prob = 0.5, na.rm = T),
-            k_lwr = quantile(k, prob = 0.05, na.rm = T),
-            k_upr = quantile(k, prob = 0.95, na.rm = T)) %>% 
-  ungroup()
-
-ggplot() +
-  geom_ribbon(data = VBG, aes(cohort, k_median, ymin = k_lwr, ymax = k_upr,
-                              fill = "All k's"), alpha = 0.4) +
-  geom_ribbon(data = VBG_filter, aes(cohort, k_median, ymin = k_lwr, ymax = k_upr,
-                                     fill = "Filtered"), alpha = 0.4) +
-  geom_line(data = VBG, aes(cohort, k_median, color = "All k's")) + 
-  geom_line(data = VBG_filter, aes(cohort, k_median, color = "Filtered"), linetype = 2) + 
-  guides(fill = "none") +
-  facet_wrap(~area)
-
-ggplot() +
-  geom_line(data = VBG, aes(cohort, k_median, color = "All k's")) + 
-  geom_line(data = VBG_filter, aes(cohort, k_median, color = "Filtered"), linetype = 2) + 
-  guides(fill = "none") +
-  facet_wrap(~area)
-
-# No difference at all really. We should probably just discuss that with this model, achieving biologically reasonable parameter values and a good fit to data are sometimes two different things. In our case, we just want a representative value of the growth (as in time to reach average maximum size in the population) that accounts for the entire growth trajectory of an individual, for each area and cohort.
 ```
 
 Calculate sample size
@@ -240,8 +206,8 @@ write_csv(VBG, paste0(home, "/output/vbg.csv"))
 order <- VBG %>%
   ungroup() %>%
   group_by(area) %>%
-  summarise(min_temp = min(temp)) %>%
-  arrange(desc(min_temp))
+  summarise(mean_temp = mean(temp)) %>%
+  arrange(desc(mean_temp))
 
 order
 
@@ -276,10 +242,26 @@ fits_ind <- ggplot(d2, aes(age_bc, length_mm, group = ID, color = ID)) +
             inherit.aes = FALSE, alpha = 0.8, linewidth = 0.3) + 
   guides(color = "none") +
   scale_color_viridis(discrete = TRUE, name = "Site", option = "cividis") +
+  scale_x_continuous(breaks = seq(1, 20, by = 2)) + 
   labs(x = "Age (years)", y = "Length (mm)") +
-  facet_wrap(~factor(area, levels = (arrange(area_attr, desc(lat)))$area), ncol = 5) + 
-  NULL
+  facet_wrap(~factor(area, levels = (arrange(area_attr, desc(lat)))$area), ncol = 5)
 
+A <- IVBG %>% 
+  ggplot(aes(factor(area, order$area), A, fill = factor(area, order$area))) + 
+  coord_cartesian(ylim = c(22, 90)) +
+  geom_violin(alpha = 0.8, color = NA) +
+  geom_boxplot(outlier.color = NA, width = 0.2, alpha = 0.9, fill = NA, size = 0.4) +
+  scale_fill_manual(values = colors, name = "Site") +
+  scale_color_manual(values = colors, name = "Site") +
+  guides(fill = "none", color = "none") +
+  labs(x = "Site", y = "Growth coefficient (*A*)") +
+  theme(axis.title.y = ggtext::element_markdown())
+
+fits_ind / A + plot_annotation(tag_levels = "A") #+ plot_layout(heights = c(1, 1.8))
+
+ggsave(paste0(home, "/figures/vb_pars_fits.pdf" ), width = 17, height = 18, units = "cm")
+
+# Supp plot for K and Linf
 k <- IVBG %>% 
   ggplot(aes(factor(area, order$area), k, fill = factor(area, order$area))) + 
   coord_cartesian(ylim = c(0, 0.7)) +
@@ -287,8 +269,7 @@ k <- IVBG %>%
   geom_boxplot(outlier.color = NA, width = 0.2, alpha = 0.9, fill = NA, size = 0.4) +
   scale_fill_manual(values = colors, name = "Site") +
   guides(fill = "none", color = "none") +
-  labs(x = "Site", y = expression(italic(k))) + 
-  coord_flip()
+  labs(x = "Site", y = expression(italic(k)))
 
 linf <- IVBG %>% 
   filter(linf < 2300) %>% 
@@ -299,628 +280,611 @@ linf <- IVBG %>%
   coord_cartesian(ylim = c(0, 2000)) +
   scale_fill_manual(values = colors, name = "Site") +
   guides(fill = "none", color = "none") +
-  labs(x = "", y = expression(paste(italic(L[infinity]), " [mm]"))) +
-  theme(axis.title.y = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank()) + 
-  coord_flip()
+  labs(x = "", y = expression(paste(italic(L[infinity]), " [mm]")))
 
-#fits_ind / (k + linf) + plot_annotation(tag_levels = "A") + plot_layout(heights = c(1, 1.8))
+k / linf
 
-k2 <- k + coord_cartesian(ylim = c(0, 0.65))
-fits_ind / k2 + plot_annotation(tag_levels = "A") #+ plot_layout(heights = c(1, 1.8))
-
-ggsave(paste0(home, "/figures/vb_pars_fits.pdf" ), width = 17, height = 18, units = "cm")
+ggsave(paste0(home, "/figures/supp/vb_k_linf.pdf" ), width = 17, height = 18, units = "cm")
 ```
 
-## Fit Sharpe-Schoolfield model to k
+## Fit Models 
+
+Overall, $A$ looks very linearly related to temperature in most cases, even when I add gams on top
 
 ```{r}
-dat <- VBG %>%
-  select(k_median, temp, area) %>%
-  rename(rate = k_median)
-```
+dat <- VBG %>% 
+  mutate(temp_sc = (temp - mean(temp)) / sd(temp),
+         temp_sq_sc = temp_sc * temp_sc,
+         area_f = as.factor(area))
 
-## Can we fit a single Sharpe Schoolfield with area-specific parameters with `brms`?
-
-```{r}
-# Again, here are the data we are fitting:
-ggplot(dat, aes(temp, rate, color = factor(area, order$area))) + 
-  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6)  
-
-hist(dat$rate)
-
-# Here's the equation (from the r package rTPC):
-# > sharpeschoolhigh_1981
-# function (temp, r_tref, e, eh, th, tref) 
-# {
-#     tref <- 273.15 + tref
-#     k <- 8.62e-05
-#     boltzmann.term <- r_tref * exp(e/k * (1/tref - 1/(temp + 
-#         273.15)))
-#     inactivation.term <- 1/(1 + exp(eh/k * (1/(th + 273.15) - 
-#         1/(temp + 273.15))))
-#     return(boltzmann.term * inactivation.term)
-# }
-
-# Add in fixed parameters
-dat$bk <- 8.62e-05
-dat$tref <- 8 + 273.15
-
-# (better visualization including bounds further down)
-n = 10000
-hist(rnorm(0.8, 1, n = n), main = "e", xlim = c(0, 5))
-hist(rnorm(2, 1, n = n), main = "eh", xlim = c(0, 7))
-hist(rnorm(0.25, 0.5, n = n), main = "r_tref", xlim = c(0, 2.5))
-hist(rnorm(12, 5, n = n), main = "th", xlim = c(5, 30))
-
-# These work nicely with the pp_check
-prior <- c(prior(normal(0.8, 1), nlpar = "e", lb = 0),
-           prior(normal(2, 1), nlpar = "eh", lb = 0),
-           prior(normal(0.3, 0.5), nlpar = "rtref", lb = 0),
-           prior(normal(10, 5), nlpar = "th", lb = 0))
-
-# Now to a prior predictive check
-fit_prior <- brm(
-  bf(rate ~ (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15)))),
-     rtref + e + eh + th ~ 1, 
-     nl = TRUE),
-  data = dat,
-  cores = 2,
-  chains = 2,
-  iter = 1500,
-  sample_prior = "only",
-  seed = 9,
-  prior = prior
-)
-
-# Global prior predictive check in relation to data. Doesn't loo too informative...
-dat %>%
-  data_grid(temp = seq_range(temp, n = 51)) %>% 
-  ungroup() %>% 
-  mutate(bk = 8.62e-05,
-         tref = 8 + 273.15) %>% 
-  add_epred_draws(fit_prior) %>% 
-  ggplot(aes(temp, y = .epred)) +
-  stat_lineribbon(.width = c(0.75), alpha = 0.3, color = "black", fill = "black") + 
-  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6) +
+# Non-scaled x-axis
+scatter <- ggplot(dat, aes(temp, A, color = factor(area, order$area)), size = 0.6) +
+  geom_point(size = 0.9) +
   scale_color_manual(values = colors, name = "Site") +
-  labs(y = "Expectation of the posterior predictive distribution", x = "Temperature (°C)") +
-  NULL
-
-ggsave(paste0(home, "/figures/supp/prior_predictive_check.pdf" ), width = 15, height = 11, units = "cm")
-
-# Now make sure it converges with real data but no random effects
-fit_global <- brm(
-  bf(rate ~ (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15)))),
-     rtref + e + eh + th ~ 1,
-     nl = TRUE),
-  data = dat,
-  cores = 4,
-  chains = 4,
-  iter = 4000, 
-  seed = 9,
-  sample_prior = "yes",
-  family = student,
-  prior = prior
-  )
-
-plot(fit_global)
-pp_check(fit_global)
-plot(conditional_effects(fit_global, effect = "temp"), points = TRUE)
-
-# Plot prior vs posterior
-post <- fit_global %>%
-  as_draws_df() %>%
-  dplyr::select(b_rtref_Intercept, b_e_Intercept, b_eh_Intercept, b_th_Intercept) %>% 
-  rename(r_tref = b_rtref_Intercept, 
-         e = b_e_Intercept,
-         eh = b_eh_Intercept,
-         th = b_th_Intercept) %>% 
-  pivot_longer(everything(), names_to = "parameter") %>% 
-  mutate(type = "Posterior")
-
-prior_draws <- fit_global %>%
-  as_draws_df() %>%
-  dplyr::select(prior_b_rtref, prior_b_e, prior_b_eh, prior_b_th) %>% 
-  rename(r_tref = prior_b_rtref, 
-         e = prior_b_e,
-         eh = prior_b_eh,
-         th = prior_b_th) %>% 
-  pivot_longer(everything(), names_to = "parameter") %>% 
-  mutate(type = "Prior")
-
-dist <- bind_rows(prior_draws, post)
-
-ggplot(dist, aes(value, fill = type)) +
-  geom_density(color = NA, alpha = 0.5) +
-  scale_fill_brewer(palette = "Set1") +
-  facet_wrap(~parameter, scales = "free") +
-  theme(legend.position = c(0.35, 0.9)) +
-  labs(fill = "")
+  scale_fill_manual(values = colors, name = "Site")
+  
+scatter +
+  geom_smooth(method = "gam", formula = y~s(x, k=3), se = FALSE)
 ```
 
-Ok, seems to work with priors and everything. They are roughly as broad as can be and still have a fit. Now fit the full model, with random area effects, more iterations and chains!
+Now we'll compare a bunch of models different temperature shapes and site-effects
 
 ```{r}
-# Now look at random area effects!
-nrow(dat)
+#| message: false
+#| warning: false
+#| results: hide
 
-# Student-t model with random effects
-fitbs <- brm(
-  bf(rate ~ (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15)))),
-     rtref + e + eh + th ~ 1 + (1|area),
-     nl = TRUE),
-  data = dat,
-  family = student,
-  cores = 4,
-  chains = 4,
-  iter = 5000,
-  sample_prior = "yes",
-  save_pars = save_pars(all = TRUE),
-  seed = 9,
-  prior = prior,
-  control = list(adapt_delta = 0.99, max_treedepth = 12)
-)
+# Quadratic effect of temperature
+m1 <- brm(A ~ area_f + temp_sc + temp_sq_sc,
+          data = dat,
+          cores = 4,
+          chains = 4,
+          iter = 4000,
+          family = student,
+          prior = set_prior("normal(0,5)", class = "b"),
+          save_pars = save_pars(all = TRUE),
+          seed = 99
+          )
 
-print(fitbs, digits = 4)
+# Interaction between area and temperature
+m2 <- brm(A ~ area_f * temp_sc,
+          data = dat,
+          cores = 4,
+          chains = 4,
+          iter = 4000,
+          family = student,
+          prior = set_prior("normal(0,5)", class = "b"),
+          save_pars = save_pars(all = TRUE),
+          seed = 99
+          )
+
+# Interaction between area and temperature but common squared term
+m3 <- brm(A ~ area_f * temp_sc + temp_sq_sc,
+          data = dat,
+          cores = 4,
+          chains = 4,
+          iter = 4000,
+          family = student,
+          prior = set_prior("normal(0,5)", class = "b"),
+          save_pars = save_pars(all = TRUE),
+          seed = 99
+          )
+
+# Quadratic effect of temperature, full random 
+m4 <- brm(A ~ temp_sc + temp_sq_sc + (1 + temp_sc + temp_sq_sc | area_f),
+          data = dat,
+          cores = 4,
+          chains = 4,
+          iter = 4000,
+          family = student,
+          prior = set_prior("normal(0,5)", class = "b"),
+          save_pars = save_pars(all = TRUE),
+          seed = 99
+          )
+
+# random intercept and slope?
+m5 <- brm(A ~ temp_sc + (1 + temp_sc | area_f),
+          data = dat,
+          cores = 4,
+          chains = 4,
+          iter = 4000,
+          family = student,
+          prior = set_prior("normal(0,5)", class = "b"),
+          save_pars = save_pars(all = TRUE),
+          control = list(adapt_delta = 0.95),
+          seed = 99
+          )
 ```
 
-Inspect the model
+Compare all models with loo
 
 ```{r}
-#| cache: false
-# Check fit
-
-library(performance)
-fitbs
-r2_bayes(fitbs)
-r2_bayes(fit_global)
-
-# qq-plots
-p1 <- dat %>%
-  add_predicted_draws(fitbs) %>%
-  summarise(
-    p_residual = mean(.prediction < rate),
-    z_residual = qnorm(p_residual),
-    .groups = "drop_last"
-  ) %>%
-  ggplot(aes(sample = z_residual)) +
-  geom_qq() +
-  geom_abline() + 
-  labs(x = "Theoretical", y = "Sample") + 
-  ggtitle("Mixed model") +
-  theme(aspect.ratio = 1)
-
-p2 <- dat %>%
-  add_predicted_draws(fit_global) %>%
-  summarise(
-    p_residual = mean(.prediction < rate),
-    z_residual = qnorm(p_residual),
-    .groups = "drop_last"
-  ) %>%
-  ggplot(aes(sample = z_residual)) +
-  geom_qq() +
-  geom_abline() + 
-  labs(x = "Theoretical", y = "Sample") + 
-  ggtitle("Global model") +
-  theme(aspect.ratio = 1)
-
-p3 <- pp_check(fitbs) + theme(legend.position = c(0.1, 0.9)) + ggtitle("Mixed model")
-p4 <- pp_check(fit_global) + theme(legend.position = c(0.1, 0.9)) + ggtitle("Global model")
-
-(p1 + p2) / (p3 + p4)
-
-ggsave(paste0(home, "/figures/supp/sharpe_brms_ppcheck_qq.pdf" ), width = 17, height = 17, units = "cm")
-
-# Plot prior vs posterior
-post <- fitbs %>%
-  as_draws_df() %>%
-  dplyr::select(b_rtref_Intercept, b_e_Intercept, b_eh_Intercept, b_th_Intercept) %>% 
-  rename(r_tref = b_rtref_Intercept, 
-         e = b_e_Intercept,
-         eh = b_eh_Intercept,
-         th = b_th_Intercept) %>% 
-  pivot_longer(everything(), names_to = "parameter") %>% 
-  mutate(type = "Posterior")
-
-prior_draws <- fitbs %>%
-  as_draws_df() %>%
-  dplyr::select(prior_b_rtref, prior_b_e, prior_b_eh, prior_b_th) %>% 
-    rename(r_tref = prior_b_rtref, 
-         e = prior_b_e,
-         eh = prior_b_eh,
-         th = prior_b_th) %>% 
-  pivot_longer(everything(), names_to = "parameter") %>% 
-  mutate(type = "Prior")
-
-dist <- bind_rows(prior_draws, post)
-
-ggplot(dist, aes(value, fill = type)) +
-  geom_density(color = NA, alpha = 0.5) +
-  scale_fill_brewer(palette = "Set1") +
-  facet_wrap(~parameter, scales = "free") + 
-  theme(legend.position = c(0.35, 0.9)) +
-  labs(fill = "", x = "Value", y = "Density")
-
-ggsave(paste0(home, "/figures/supp/sharpe_brms_prior.pdf" ), width = 17, height = 17, units = "cm")
+#| code-fold: false
+#| message: false
+loo(m1, m2, m3, m4, m5,
+    moment_match = TRUE)
 ```
 
-Sensitivity with respect to priors
-
 ```{r}
-# Set a bunch of priors with different sigmas
-  # prior1 <- c(prior(normal(0.8, 1), nlpar = "e", lb = 0),
-  #             prior(normal(2, 1), nlpar = "eh", lb = 0),
-  #             prior(normal(0.3, 0.5), nlpar = "rtref", lb = 0),
-  #             prior(normal(10, 5), nlpar = "th", lb = 0))
+#| eval: false
+#| include: false
+library(equatiomatic)
+library(lme4)
 
-# For each object, we increase sd by a factor 1.5 from previous
-  prior2 <- c(prior(normal(0.8, 1.5), nlpar = "e", lb = 0),
-              prior(normal(2, 1.5), nlpar = "eh", lb = 0),
-              prior(normal(0.3, 0.75), nlpar = "rtref", lb = 0),
-              prior(normal(10, 7.5), nlpar = "th", lb = 0))
-  
-  prior3 <- c(prior(normal(0.8, 3), nlpar = "e", lb = 0),
-              prior(normal(2, 3), nlpar = "eh", lb = 0),
-              prior(normal(0.3, 1.125), nlpar = "rtref", lb = 0),
-              prior(normal(10, 11.25), nlpar = "th", lb = 0))
-  
-  prior4 <- c(prior(normal(0.8, 4.5), nlpar = "e", lb = 0),
-              prior(normal(2, 4.5), nlpar = "eh", lb = 0),
-              prior(normal(0.3, 1.6875), nlpar = "rtref", lb = 0),
-              prior(normal(10, 16.875), nlpar = "th", lb = 0))
-  
-  prior5 <- c(prior(normal(0.8, 6.75), nlpar = "e", lb = 0),
-              prior(normal(2, 6.75), nlpar = "eh", lb = 0),
-              prior(normal(0.3, 2.53125), nlpar = "rtref", lb = 0),
-              prior(normal(10, 25.3125), nlpar = "th", lb = 0))
-  
-  prior6 <- c(prior(normal(0.8, 10.125), nlpar = "e", lb = 0),
-              prior(normal(2, 10.125), nlpar = "eh", lb = 0),
-              prior(normal(0.3, 3.796875), nlpar = "rtref", lb = 0),
-              prior(normal(10, 37.96875), nlpar = "th", lb = 0))
-
-  priors <- list(prior2, prior3, prior4, prior5, prior6)
-
-# List for storing posteriors and priors
-dist_list <- list()
-  
-for(i in 1:5) {
-  
-  prior <- priors[[i]]
-  
-  fit_sens <- brm(
-    bf(rate ~ (rtref * exp(e/bk * (1/tref - 1/(temp + 273.15)))) / (1 + exp(eh/bk * (1/(th + 273.15) - 1/(temp + 273.15)))),
-       rtref + e + eh + th ~ 1,
-       nl = TRUE),
-    data = dat,
-    cores = 4,
-    chains = 4,
-    iter = 4000, 
-    seed = 9,
-    sample_prior = "yes",
-    family = student,
-    prior = prior
-    )
-  
-  # Plot prior vs posterior
-  post <- fit_sens %>%
-    as_draws_df() %>%
-    dplyr::select(b_rtref_Intercept, b_e_Intercept, b_eh_Intercept, b_th_Intercept) %>% 
-    rename(r_tref = b_rtref_Intercept, 
-           e = b_e_Intercept,
-           eh = b_eh_Intercept,
-           th = b_th_Intercept) %>% 
-    pivot_longer(everything(), names_to = "parameter") %>% 
-    mutate(type = "Posterior")
-
-  prior_draws <- fit_sens %>%
-    as_draws_df() %>%
-    dplyr::select(prior_b_rtref, prior_b_e, prior_b_eh, prior_b_th) %>% 
-    rename(r_tref = prior_b_rtref, 
-           e = prior_b_e,
-           eh = prior_b_eh,
-           th = prior_b_th) %>% 
-    pivot_longer(everything(), names_to = "parameter") %>% 
-    mutate(type = "Prior")
-  
-  dist <- bind_rows(prior_draws, post) %>% 
-    mutate(iter = i)
-  
-  dist_list[[i]] <- dist
-  
-}
-
-dist_df <- bind_rows(dist_list)
-
-write_csv(dist_df, paste0(home, "/output/prior_sens.csv"))
-
-ggplot(dist_df, aes(value, fill = type)) +
-  geom_density(color = NA, alpha = 0.5) +
-  scale_fill_brewer(palette = "Set1") +
-  ggh4x::facet_grid2(iter~parameter, scales = "free", independent = "y") +
-  #coord_cartesian(xlim = c(0, 50)) +
-  labs(fill = "") + 
-  labs(x = "Value", y = "Density")
-
-ggsave(paste0(home, "/figures/supp/prior_sensi.pdf"), width = 17, height = 17, units = "cm")
-
-ggplot(dist_df %>% filter(parameter == "r_tref"), aes(value, color = as.factor(iter), 
-                    linetype = as.factor(type))) +
-  geom_density(fill = NA) +
-  coord_cartesian(xlim = c(0, 4)) +
-  scale_color_viridis(discrete = TRUE) +
-  facet_wrap(~parameter, scales = "free") +
-  labs(fill = "", linetype = "", color = "iteration")
-
-ggplot(dist_df %>% filter(parameter == "e"), aes(value, color = as.factor(iter), 
-                    linetype = as.factor(type))) +
-  geom_density(fill = NA) +
-  coord_cartesian(xlim = c(0, 12)) +
-  scale_color_viridis(discrete = TRUE) +
-  facet_wrap(~parameter, scales = "free") +
-  labs(fill = "", linetype = "", color = "iteration")
-
-ggplot(dist_df %>% filter(parameter == "eh"), aes(value, color = as.factor(iter), 
-                    linetype = as.factor(type))) +
-  geom_density(fill = NA) +
-  coord_cartesian(xlim = c(0, 10)) +
-  scale_color_viridis(discrete = TRUE) +
-  facet_wrap(~parameter, scales = "free") +
-  labs(fill = "", linetype = "", color = "iteration")
-
-ggplot(dist_df %>% filter(parameter == "th"), aes(value, color = as.factor(iter), 
-                    linetype = as.factor(type))) +
-  geom_density(fill = NA) +
-  coord_cartesian(xlim = c(0, 35)) +
-  scale_color_viridis(discrete = TRUE) +
-  facet_wrap(~parameter, scales = "free") +
-  labs(fill = "", linetype = "", color = "iteration")
-  
-dist_df %>% 
-  group_by(iter, parameter, type) %>% 
-  summarise(mean = mean(value),
-            sd = sd(value)) %>% 
-  ggplot(aes(iter, mean, color = type)) +
-  geom_point(position = position_dodge(width = 0.2)) +
-  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), width = 0,
-                position = position_dodge(width = 0.2)) +
-  scale_fill_brewer(palette = "Set1") +
-  facet_wrap(~parameter, scales = "free")
-
-dist_df %>% 
-  group_by(iter, parameter, type) %>% 
-  summarise(mean = mean(value)) %>% 
-  ggplot(aes(iter, mean, color = type)) +
-  geom_point(position = position_dodge(width = 0.2)) +
-  scale_fill_brewer(palette = "Set1") +
-  facet_wrap(~parameter, scales = "free")
-
-dist_df %>% 
-  group_by(iter, parameter, type) %>% 
-  summarise(mean = mean(value),
-            sd = sd(value)) %>% 
-  arrange(parameter) %>% 
-  as.data.frame()
+t <- lmer(A ~ temp_sc + temp_sq_sc + (1 + temp_sc + temp_sq_sc | area_f), data = dat)
+extract_eq(t)
 ```
 
-Calculate T_opt
+Plot the favorite model
 
 ```{r}
-ts <- dat %>% 
-  data_grid(temp = seq_range(temp, n = 100)) %>% 
-  mutate(bk = 8.62e-05,
-         tref = 8 + 273.15) %>% 
-  add_epred_draws(fit_global, re_formula = NA, ndraws = 8000) 
+#| message: false
+performance::r2_bayes(m4)
+prior_summary(m4)
+m4
 
-p1 <- ggplot(ts) + 
-  geom_line(aes(temp, y = .epred, group = .draw), alpha = .1) + 
-  coord_cartesian(ylim = c(0.1, 0.4))
-
-p2 <- ggplot(ts) + 
-  geom_line(aes(temp, y = .epred, group = .draw), alpha = .1) +
-  coord_cartesian(ylim = c(0.1, 0.4))
-
-p1 + p2
-
-# Compute quantiles across spaghetties
-t_opt <- ts %>% 
-  group_by(.draw) %>% 
-  filter(.epred == max(.epred)) %>% 
-  ungroup() %>% 
-  filter(!temp == min(temp)) %>% # remove values where there was no optimum
-  filter(!temp == max(temp))
-
-# These are used in the fit-temp script
-quantile(t_opt$temp, probs = c(0.025, 0.5, 0.975))
-
-ggplot(t_opt, aes(temp)) + 
-  geom_histogram(bins = length(unique(t_opt$temp))) + 
-  theme_void()
-
-# Make the main plot (conditional effect of temperature, with and without random effects)
-# Predictions without random effects
-glob <- dat %>%
-  data_grid(temp = seq_range(temp, n = 100)) %>% 
-  mutate(bk = 8.62e-05,
-         tref = 8 + 273.15) %>% 
-  add_epred_draws(fit_global, re_formula = NA) %>% #
-  ungroup()
-
-dat %>%
-  group_by(area) %>%
-  data_grid(temp = seq_range(temp, n = 100)) %>% 
-  ungroup() %>% 
-  mutate(bk = 8.62e-05,
-         tref = 8 + 273.15) %>% 
-  add_epred_draws(fitbs) %>% 
-  ungroup() %>% 
-  ggplot(aes(temp, y = .epred, color = factor(area, order$area))) +
-  stat_lineribbon(data = glob, aes(temp, .epred), .width = c(0.9), inherit.aes = FALSE,
-                 fill = "black", color = "black", alpha = 0.1) +
-  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 1, alpha = 0.8) +
-  stat_lineribbon(.width = c(0)) +
-  stat_lineribbon(data = glob, aes(temp, .epred), .width = c(0), inherit.aes = FALSE,
-                 color = "black", alpha = 0.9, linetype = 2) +
-  coord_cartesian(expand = 0) +
-  scale_color_manual(values = colors, name = "Site") +
-  guides(fill = "none",
-         color = guide_legend(nrow = 1, reverse = TRUE, title.position = "top", title.hjust = 0.5,
-                              override.aes = list(size = 1))) +
-  theme(axis.title.y = ggtext::element_markdown(),
-        legend.position = "bottom",
-        legend.direction = "horizontal") +
-  labs(x = "Temperature (°C)",
-       y = "von Bertalanffy growth coefficient (*k*)") + 
-  NULL
-
-ggsave(paste0(home, "/figures/sharpe_school_bayes.pdf"), width = 17, height = 17, units = "cm")
-#ggsave(paste0(home, "/figures/for-talks/sharpe_school_bayes.pdf"), width = 14, height = 14, units = "cm")
-```
-
-### Area-specific T_opts as a ridgeplot
-
-```{r}
-#| cache: false
-# Calculate T_opt by area
-tsa <- dat %>% 
-  data_grid(area = unique(dat$area),
-            temp = seq_range(temp, n = 100)) %>% 
-  mutate(bk = 8.62e-05,
-         tref = 8 + 273.15) %>% 
-  add_epred_draws(fitbs, re_formula = NULL, ndraws = 10000) 
-
-t_opt_a <- tsa %>% 
-  group_by(.draw, area) %>% 
-  filter(.epred == max(.epred)) %>% 
-  ungroup() %>% 
-  filter(!temp == min(temp)) %>% # remove values where there was no optimum
-  filter(!temp == max(temp))
-
-t_opt_a_sum <- t_opt_a %>% 
+# Predict with the main model
+m4_pred <- dat %>%
   group_by(area) %>% 
-  summarise(median = median(temp),
-            lwr = quantile(temp, probs = 0.1),
-            upr = quantile(temp, probs = 0.9))
-
-# How many datapoints are below or above optimum by area and globally?
-left_join(dat, t_opt_a_sum, by = "area") %>% 
-  filter(temp < median) %>% 
-  nrow()
-
-left_join(dat, t_opt_a_sum, by = "area") %>% 
-  mutate(above = ifelse(temp > median, "Y", "N")) %>% 
-  group_by(area) %>% 
-  count(above) %>% 
-  pivot_wider(names_from = above, values_from = n) %>% 
-  mutate(prop = Y/(Y+N)) %>% 
-  arrange(desc(prop))
-
-# Without impacted?
-left_join(dat, t_opt_a_sum, by = "area") %>% 
-  filter(!area %in% c("BT", "SI_EK")) %>% 
-  filter(temp < median) %>% 
-  nrow()
-
-dat %>% 
-  group_by(area) %>% 
-  summarise(n = n()) %>% 
-  arrange(desc(n))
-
-# nrow(filter(dat, temp < 9.468607))
-# nrow(dat)
-
-ggplot(t_opt, aes(temp)) + 
-  geom_histogram(bins = length(unique(t_opt$temp)))
-
-# Compute quantiles across spaghetties
-rect_dat <- data.frame(xmin = c(quantile(t_opt$temp, probs = c(0.05)), quantile(t_opt$temp, probs = c(0.1))),
-                       xmax = c(quantile(t_opt$temp, probs = c(0.95)), quantile(t_opt$temp, probs = c(0.9))),
-                       ymin = c(-Inf, -Inf),
-                       ymax = c(Inf, Inf),
-                       interval = c("90%", "80%"))
-
-ridge <- ggplot(t_opt_a, aes(temp, factor(area, levels = rev(order$area)), fill = factor(area, levels = rev(order$area)))) + 
-  geom_vline(xintercept = quantile(t_opt$temp, probs = c(0.5)), alpha = 0.6, linetype = 2, linewidth = 0.75) +
-  geom_rect(data = rect_dat %>% filter(interval == "90%"), aes(xmin = xmin, xmax = xmax), ymin = -Inf, ymax = Inf, 
-            inherit.aes = FALSE, fill = "grey", alpha = 0.35) +
-  geom_rect(data = rect_dat %>% filter(interval == "80%"), aes(xmin = xmin, xmax = xmax), ymin = -Inf, ymax = Inf, 
-            inherit.aes = FALSE, fill = "grey", alpha = 1) +
-  geom_density_ridges(alpha = 0.7, color = NA, scale = 1,
-                      stat = "binline", bins = 50) +
-  scale_fill_manual(values = rev(colors), name = "Site") +
-  scale_color_manual(values = rev(colors), name = "Site") +
-  labs(x = "Temperature (°C)", y = "") +
-  guides(fill = "none") +
-  geom_errorbar(data = t_opt_a_sum, aes(xmin = lwr, xmax = upr, y = area, color = factor(area, levels = rev(order$area))), linewidth = 1,
-                inherit.aes = FALSE, width = 0) +
-  geom_point(data = t_opt_a_sum, aes(median, area, fill = factor(area, levels = rev(order$area))), shape = 21, color = "white", size = 3) +
-  NULL
-
-ggsave(paste0(home, "/figures/t_opt_ridges.pdf" ), width = 17, height = 17, units = "cm")
-
-# Any patterns in the residuals (area spec and global)
-t_opt_a_sum$global <- quantile(t_opt$temp, probs = c(0.5))
-
-t_opt_a_sum$diff <- t_opt_a_sum$median - t_opt_a_sum$global
-
-order2 <- VBG %>%
-  ungroup() %>%
-  group_by(area) %>%
-  summarise(mean_temp = mean(temp)) %>%
-  arrange(desc(mean_temp))
-
-t_opt_a_sum <- left_join(t_opt_a_sum, order2)
-
-diff <- ggplot(t_opt_a_sum, aes(mean_temp, diff, label = area)) +
-  geom_point(color = "gray10") + 
-  geom_errorbar(aes(ymin = lwr-global, ymax = upr-global), width = 0, alpha = 0.4) +
-  labs(x = "Mean site temperature (°C)", y = "Site-specific - Global optimum") +
-  geom_hline(yintercept = 0, alpha = 0.5, color = "gray30", linetype = 2) +
-  NULL
-  
-(ridge & coord_flip() & guides(color = "none")) + diff + plot_layout(widths = c(1, 0.6)) + plot_annotation(tag_levels = "A")
-
-ggsave(paste0(home, "/figures/t_opt_ridges.pdf" ), width = 17, height = 8, units = "cm", device = cairo_pdf)
-```
-
-### Plot area specific predictions
-
-```{r}
-#| cache: false
-# Compare with area-specific sharpe scool!
-area_pred_brms <- dat %>%
-  group_by(area) %>% 
-  data_grid(temp = seq_range(temp, n = 100)) %>% 
+  data_grid(temp_sc = seq_range(temp_sc, n = 100)) %>% 
   ungroup() %>% 
-  mutate(bk = 8.62e-05,
-         tref = 8 + 273.15) %>% 
-  add_epred_draws(fitbs)
+  mutate(area_f = as.factor(area),
+         temp = (temp_sc * sd(VBG$temp)) + mean(VBG$temp),
+         temp_sq_sc = temp_sc*temp_sc) %>% 
+  add_epred_draws(m4)
+
+# Global prediction?
+m4_pred_glob <- dat %>%
+  data_grid(temp_sc = seq_range(temp_sc, n = 100)) %>% 
+  mutate(temp = (temp_sc * sd(VBG$temp)) + mean(VBG$temp),
+         temp_sq_sc = temp_sc*temp_sc) %>% 
+  add_epred_draws(m4, re_formula = NA)
 
 # Plot area specific predictions as facets
-p1 <- ggplot(area_pred_brms, aes(temp, y = .epred, color = factor(area, order$area),
-                           fill = factor(area, order$area))) +
-  stat_lineribbon(.width = c(0.95), alpha = 0.4, color = NA) +
-  stat_lineribbon(.width = c(0)) + 
-  geom_point(data = dat, aes(temp, rate, color = factor(area, order$area)), size = 0.6) +
+p0 <- scatter + 
+  # scale_color_viridis(discrete = TRUE) +
+  # scale_fill_viridis(discrete = TRUE) +
+  stat_lineribbon(data = m4_pred,
+                  aes(temp, y = .epred,
+                      fill = factor(area, order$area)),
+                  alpha = 0.1, .width = 0.95, linewidth = 0.9) +
+  stat_lineribbon(data = m4_pred,
+                  aes(temp, y = .epred,
+                      fill = factor(area, order$area)),
+                  alpha = 1, .width = 0, linewidth = 0.9) +
+  # stat_lineribbon(data = m4_pred_glob,
+  #                 aes(temp, y = .epred), inherit.aes = FALSE, color = "grey30", fill = "grey30",
+  #                 alpha = 1, .width = 0, linewidth = 0.9) + 
+  guides(fill = "none", color = guide_legend(nrow = 1, reverse = TRUE,
+                                             title.position = "top", title.hjust = 0.5,
+                                             override.aes = list(fill = NA),
+                                             position = "inside")) + 
+  
+  theme(legend.position.inside = c(0.5, 0.05),
+        axis.title.y = ggtext::element_markdown()) + 
+  labs(x = "Mean site temperature [°C]", y = "Size-corrected growth coefficient (*A*)",
+       color = "")
+
+p0
+
+ggsave(paste0(home, "/figures/a_conditional.pdf" ), width = 17, height = 17, units = "cm")
+
+# Facet
+# scatter + 
+#   stat_lineribbon(data = m5_pred,
+#                   aes(temp, y = .epred,
+#                       fill = factor(area, order$area)),
+#                   alpha = 0.1, .width = 0.95) + 
+#   stat_lineribbon(data = m5_pred,
+#                   aes(temp, y = .epred,
+#                       fill = factor(area, order$area)),
+#                   alpha = 1, .width = 0) + 
+#   facet_wrap(~area)
+# 
+# ggsave(paste0(home, "/figures/supp/A_by_area.pdf" ), width = 17, height = 17, units = "cm")
+
+
+# Look at the slopes and intercepts by area
+mean_temps <- pred_temp %>%
+  group_by(area) %>%
+  summarise(mean_temp = mean(temp))
+ 
+# p1 <- m4 %>%
+#   spread_draws(b_temp_sc, r_area_f[temp_sc,]) %>%
+#   median_qi(slope = b_temp_sc + r_area_f, .width = c(.9)) %>%
+#   mutate(area = temp_sc) %>% 
+#   left_join(mean_temps, by = "area") %>% 
+#   ggplot(aes(y = slope, x = mean_temp, ymin = .lower, ymax = .upper,
+#              color = factor(area, order$area),
+#              fill = factor(area, order$area))) +
+#   geom_hline(yintercept = 0, linetype = 2, alpha = 0.5, linewidth = 0.8) + 
+#   geom_smooth(method = "lm", inherit.aes = FALSE,
+#               aes(mean_temp, slope), alpha = 0.15, color = "grey") +  
+#   geom_point() +
+#   geom_errorbar(alpha = 0.3) +
+#   scale_color_manual(values = colors, name = "Site") + 
+#   scale_fill_manual(values = colors, name = "Site") + 
+#   labs(y = "Site specific slope", x = "Mean site temperature (°C)") + 
+#   guides(fill = "none",
+#          color = "none") +
+#   theme(axis.title.y = ggtext::element_markdown())
+# 
+p2 <- m4 %>%
+  spread_draws(b_Intercept, r_area_f[Intercept,]) %>%
+  median_qi(intercept = b_Intercept + r_area_f, .width = c(.9)) %>%
+  mutate(area = Intercept) %>%
+  left_join(mean_temps, by = "area") %>%
+  ggplot(aes(y = intercept, x = mean_temp, ymin = .lower, ymax = .upper,
+             color = factor(area, order$area),
+             fill = factor(area, order$area))) +
+  geom_smooth(method = "lm", inherit.aes = FALSE, linetype = 2,
+              aes(mean_temp, intercept), alpha = 0.15, color = "grey") +
+  geom_point(size = 2) +
+  geom_errorbar(alpha = 0.3) +
   scale_color_manual(values = colors, name = "Site") +
   scale_fill_manual(values = colors, name = "Site") +
-  scale_linetype_manual(values = 2) +
-  facet_wrap(~factor(area, rev(order$area))) +
+  labs(y = "Site-specific intercept", x = "Mean site temperature (°C)") +
   guides(fill = "none",
-         color = guide_legend(nrow = 1, reverse = TRUE, title.position = "top", title.hjust = 0.5,
-                              override.aes = list(size = 1))) +
-  theme(axis.title.y = ggtext::element_markdown(),
-        legend.position = "bottom",
-        legend.direction = "horizontal") +
-  labs(x = "Temperature (°C)",
-       y = "von Bertalanffy growth coefficient (*k*)",
-       linetype = "")
+         color = "none") +
+  theme(axis.title.y = ggtext::element_markdown())
+
+p2 
+
+ggsave(paste0(home, "/figures/random_intercepts.pdf" ), width = 11, height = 11, units = "cm")
+
+ 
+# p0 / ((p2 + p1) + plot_layout(axes = "collect")) +
+#   plot_annotation(tag_level = "A") + 
+#   plot_layout(heights = c(2, 1))
+# 
+# ggsave(paste0(home, "/figures/a_conditional.pdf" ), width = 17, height = 20, units = "cm")
+
+# Check significance of slopes?!
+# get_variables(m5)
+# t_inter <- m5 %>%
+#   spread_draws(b_Intercept, r_area_f[Intercept,]) %>%
+#   median_qi(intercept = b_Intercept + r_area_f, .width = c(.9)) %>%
+#   mutate(area = Intercept) %>%
+#   left_join(mean_temps, by = "area")
+# 
+# t_slope <- m5 %>%
+#   spread_draws(b_temp_sc, r_area_f[temp_sc,]) %>%
+#   median_qi(slope = b_temp_sc + r_area_f, .width = c(.9)) %>%
+#   mutate(area = temp_sc) %>%
+#   left_join(mean_temps, by = "area")
+# 
+# tidy(lm(intercept ~ mean_temp, data = t_inter))
+# tidy(lm(slope ~ mean_temp, data = t_slope))
+```
+
+Plot conceptual model
+
+```{r}
+get_variables(m4)
+
+par <- m4 %>%
+  spread_draws(b_Intercept, b_temp_sc, b_temp_sq_sc,
+               `r_area_f[FM,Intercept]`, `r_area_f[FM,temp_sc]`, `r_area_f[FM,temp_sq_sc]`) %>% 
+  ungroup() %>% 
+  mutate(intercept = b_Intercept + `r_area_f[FM,Intercept]`,
+         b1 = b_temp_sc + `r_area_f[FM,temp_sc]`,
+         b2 = b_temp_sq_sc + `r_area_f[FM,temp_sq_sc]`) %>% 
+  summarise(intercept = mean(intercept),
+            b1 = mean(b1),
+            b2 = mean(b2))
+
+par
+
+temp <- tibble(temp = seq(5, 30, length.out = 500)) %>% 
+  mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
+         temp_sc_sq = temp_sc*temp_sc)  
+
+no_adapt <- temp %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.05),
+         pop = ifelse(temp <= 10, "Cold", "Medium"),
+         pop = ifelse(temp > 20, "Warm", pop))
+
+p1 <- ggplot(no_adapt, aes(temp, growth_rate, color = pop)) + 
+  geom_line(size = 1.2, alpha = 0.8) + 
+  labs(tag = "No adaptation") +
+  theme(plot.tag = element_text(size = 9),
+        plot.tag.position = c(0.25, 0.9),
+        legend.position.inside = c(0.85, 0.2),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) + 
+  guides(color = guide_legend(position = "inside"))
+  
 
 p1
 
-ggsave(paste0(home, "/figures/supp/sharpe_school_bayes_ci_facet.pdf" ), width = 17, height = 17, units = "cm")
-ggsave(paste0(home, "/figures/for-talks/sharpe_school_bayes_ci_facet.pdf" ), width = 14, height = 14, units = "cm")
+# Now do "local adaption
+adapt_1 <- temp %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.08),
+         pop = "Cold",
+         growth_rate = growth_rate - 10,
+         temp = temp - 20) %>% 
+  filter(temp < -2)
+
+adapt_2 <- temp %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.06),
+         pop = "Medium",
+         growth_rate = growth_rate,
+         temp = temp - 6)
+
+adapt_3 <- temp %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.06),
+         pop = "Warm",
+         growth_rate = growth_rate + 10,
+         temp = temp + 20)
+
+adapt <- bind_rows(adapt_1, adapt_2, adapt_3)
+
+p2 <- ggplot(adapt, aes(temp, growth_rate, color = pop)) + 
+  geom_line(size = 1.2, alpha = 0.8) + 
+  labs(tag = "Local adaptation") + 
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.tag = element_text(size = 9),
+        plot.tag.position = c(0.27, 0.9)) + 
+  guides(color = "none") + 
+  coord_cartesian(xlim = c(-15, 50))
+
+p2 / p1 + 
+  plot_layout(axes = "collect") &
+  labs(y = "Growth rate", x = "Temperature (°C)", color = "Site") &
+  scale_color_manual(values = colors[c(10, 5, 1)])
+
+ggsave(paste0(home, "/figures/concept.pdf"), width = 11, height = 15, units = "cm")
+
+```
+
+Supplementary plot
+
+```{r}
+# Plot prior vs posterior
+# Refit with sampling on prior
+
+ggsave(paste0(home, "/figures/supp/pp_check.pdf" ), width = 11, height = 11, units = "cm")
+
+m4p <- brm(A ~ temp_sc + temp_sq_sc + (1 + temp_sc + temp_sq_sc | area_f),
+           data = dat,
+           cores = 4,
+           chains = 4,
+           iter = 4000,
+           family = student,
+           prior = set_prior("normal(0,5)", class = "b"),
+           sample_prior = TRUE,
+           save_pars = save_pars(all = TRUE),
+           control = list(adapt_delta = 0.95),
+           )
+
+prior_summary(m4p)
+
+get_variables(m4p)
+
+plot(m4)
+
+post_draws <- get_post_draws(model = m4p, 
+                             params = c("b_Intercept", "b_temp_sc", "sigma",
+                                        "nu"))
+
+prior_draws <- get_prior_draws(model = m4p, 
+                               params = c("prior_Intercept", "prior_b", "prior_sigma",
+                                          "prior_nu"))
+
+dist <- bind_rows(post_draws %>%
+                    mutate(parameter = ifelse(parameter == "b_Intercept",
+                                              "Intercept",
+                                              parameter),
+                           
+                           parameter = ifelse(parameter == "b_temp_sc",
+                                              "temp_sc",
+                                              parameter)),
+                  
+                  prior_draws %>%
+                    mutate(parameter = ifelse(parameter == "b", "temp_sc",
+                                              parameter))
+                  )
+
+plot_prior_post(dist, type) +
+  theme(legend.position.inside = c(0.93, 0.97)) +  
+  guides(fill = guide_legend(position = "inside")) +  
+  labs(x = "Value", y = "Density") +
+  facet_wrap(~parameter, scales = "free")
+
+ggsave(paste0(home, "/figures/supp/brms_prior.pdf" ), width = 17, height = 17, units = "cm")
+
+# Posterior predictive
+pp_check(m4p) + 
+  theme(legend.position.inside = c(0.8, 0.8)) + 
+  guides(color = guide_legend(position = "inside")) + 
+  labs(x = "Growth coefficient (*A*)")
+```
+
+Fit models of K and Linf to temperature
+
+```{r K}
+# Quadratic effect of temperature
+m4k <- brm(k ~ temp_sc + temp_sq_sc + (1 + temp_sc + temp_sq_sc | area_f),
+           data = dat,
+           cores = 4,
+           chains = 4,
+           iter = 4000,
+           family = student,
+           prior = set_prior("normal(0,5)", class = "b"),
+           save_pars = save_pars(all = TRUE),
+           control = list(adapt_delta = 0.95),
+           )
+
+conditional_effects(m4k)
+```
+
+
+```{r linf}
+m4l <- brm(linf ~ temp_sc + temp_sq_sc + (1 + temp_sc + temp_sq_sc | area_f),
+           data = dat,
+           cores = 4,
+           chains = 4,
+           iter = 4000,
+           family = student,
+           prior = set_prior("normal(0,5)", class = "b"),
+           save_pars = save_pars(all = TRUE)
+           )
+```
+
+Plot these fits
+
+```{r}
+m4k_pred <- dat %>%
+  group_by(area) %>% 
+  data_grid(temp_sc = seq_range(temp_sc, n = 100)) %>% 
+  ungroup() %>% 
+  mutate(area_f = as.factor(area),
+         temp_sq_sc = temp_sc*temp_sc,
+         temp = (temp_sc * sd(VBG$temp)) + mean(VBG$temp)) %>% 
+  add_epred_draws(m4k)
+
+m4l_pred <- dat %>%
+  group_by(area) %>% 
+  data_grid(temp_sc = seq_range(temp_sc, n = 100)) %>% 
+  ungroup() %>% 
+  mutate(area_f = as.factor(area),
+         temp_sq_sc = temp_sc*temp_sc,
+         temp = (temp_sc * sd(VBG$temp)) + mean(VBG$temp)) %>% 
+  add_epred_draws(m4l)
+
+#m4_kl <- bind_rows(m4k_pred, m4l_pred)
+
+# K  
+pk <- ggplot(dat, aes(temp, k, color = factor(area, order$area)), size = 0.6) +
+  geom_point() +
+  scale_color_manual(values = colors, name = "Site") +
+  scale_fill_manual(values = colors, name = "Site") +
+  guides(fill = "none",
+         color = guide_legend(nrow = 1, reverse = TRUE, title.position = "top", title.hjust = 0.5,
+                              override.aes = list(size = 1))) +
+  theme(axis.title.y = ggtext::element_markdown(),
+        legend.position = "bottom",
+        legend.direction = "horizontal") + 
+  stat_lineribbon(data = m4k_pred,
+                  aes(temp, y = .epred,
+                      fill = factor(area, order$area)),
+                  alpha = 0.1, .width = 0.95) +
+  stat_lineribbon(data = m4k_pred,
+                  aes(temp, y = .epred,
+                      fill = factor(area, order$area)),
+                  alpha = 1, .width = 0) +
+  guides(fill = "none", color = guide_legend(nrow = 1, reverse = TRUE,
+                                             title.position = "top", title.hjust = 0.5,
+                                             override.aes = list(fill = NA))) + 
+  labs(x = "Mean site temperature [°C]", y = "*k*", color = "")
+
+# Linf
+pl <- ggplot(dat, aes(temp, linf, color = factor(area, order$area)), size = 0.6) +
+  geom_point() +
+  scale_color_manual(values = colors, name = "Site") +
+  scale_fill_manual(values = colors, name = "Site") +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal") +
+  stat_lineribbon(data = m4l_pred,
+                  aes(temp, y = .epred,
+                      fill = factor(area, order$area)),
+                  alpha = 0.1, .width = 0.95) +
+  stat_lineribbon(data = m4l_pred,
+                  aes(temp, y = .epred,
+                      fill = factor(area, order$area)),
+                  alpha = 1, .width = 0) +
+  guides(fill = "none", color = guide_legend(nrow = 1, reverse = TRUE,
+                                             title.position = "top", title.hjust = 0.5,
+                                             override.aes = list(fill = NA))) + 
+  labs(x = "Mean site temperature [°C]", y = expression(paste(italic(L[infinity]), " [mm]")),
+       color = "")
+
+pk / pl + 
+  plot_layout(axis = "collect", guides = "collect") & 
+  theme(legend.position = "bottom")
+
+ggsave(paste0(home, "/figures/supp/k_linf__conditional.pdf" ), width = 17, height = 25, units = "cm")
+```
+
+Print global temperature slopes
+
+```{r}
+summary(m4k)
+summary(m4l)
+```
+
+Calculate VBGE fits for specific temperatures curves. Since the global effects of temperature are flat, we have to do it with area-specific predictions. But which ones? Here I predict k and Linf for 2 temperatures: mean in area and +3 °C. I then use those to calculate reference and warm VBGE curves. There's a tendency for an increase in size-at-age in warmer areas. This we sort of see already in the plots of Linf against temperature by area, where cool populations decline and warm increase their Linf.
+
+```{r}
+# Area specific parameters, then calculate growth curves from those
+
+# For the plots below I trim age to 12, which is approximate maximum... with 40, we are essentially just plotting Linf, which we already have better plots for
+age_bc <- 0:40 
+
+# Predict k across areas
+m4k_pars <- dat %>%
+  group_by(area_f) %>% 
+  data_grid(temp = mean(temp)) %>% 
+  ungroup() %>% 
+  mutate(temp2 = temp + 3) %>% 
+  pivot_longer(c("temp2", "temp"), values_to = "temp") %>%
+  dplyr::select(-name) %>% 
+  mutate(temp_sc = (temp - mean(dat$temp)) / sd(dat$temp),
+         temp_sq_sc = temp_sc*temp_sc) %>% 
+  add_epred_draws(m4k) %>% 
+  rename(k = .epred) %>% 
+  group_by(temp, area_f) %>%
+  summarise(k_median = quantile(k, prob = 0.5),
+            k_lwr = quantile(k, prob = 0.05),
+            k_upr = quantile(k, prob = 0.95))
+
+
+m4l_pars <- dat %>%
+  group_by(area_f) %>% 
+  data_grid(temp = mean(temp)) %>% 
+  ungroup() %>% 
+  mutate(temp2 = temp + 3) %>% 
+  pivot_longer(c("temp2", "temp"), values_to = "temp") %>%
+  dplyr::select(-name) %>% 
+  mutate(temp_sc = (temp - mean(dat$temp)) / sd(dat$temp),
+         temp_sq_sc = temp_sc*temp_sc) %>% 
+  add_epred_draws(m4l) %>% 
+  rename(linf = .epred) %>% 
+  group_by(temp, area_f) %>% 
+  summarise(linf_median = quantile(linf, prob = 0.5),
+            linf_lwr = quantile(linf, prob = 0.05),
+            linf_upr = quantile(linf, prob = 0.95))
+
+est <- left_join(m4k_pars, 
+                 m4l_pars,
+                 by = c("area_f", "temp"))
+
+# Expand by age and calculate length-at-age
+est_sum <- est %>% 
+  crossing(age_bc) %>% 
+  mutate(length_mm = linf_median*(1-exp(-k_median*age_bc)),
+         length_mm_lwr = linf_lwr*(1-exp(-k_lwr*age_bc)),
+         length_mm_upr = linf_upr*(1-exp(-k_upr*age_bc))) %>% 
+  group_by(area_f) %>% 
+  mutate(temp_cat = ifelse(temp == min(temp), "Mean °C", "Mean + 2°C"))
+
+pal <- rev(brewer.pal(n = 6, name = "Paired")[c(2, 6)])
+
+est_sum %>% 
+  ggplot(aes(age_bc, length_mm, color = temp_cat)) +  
+  geom_ribbon(aes(age_bc, ymin = length_mm_lwr, ymax = length_mm_upr, fill = temp_cat),
+              alpha = 0.3, color = NA) +
+  geom_line() +
+  coord_cartesian(xlim = c(0, 12)) +
+  scale_color_manual(values = pal, name = "Temperature") +
+  scale_fill_manual(values = pal, name = "Temperature") +
+  facet_wrap(~factor(area_f, rev(order$area)), ncol = 4) + 
+  theme(legend.position = "bottom") +
+  labs(x = "Age (years)", y = "Predicted length (mm)")
+  
+# Difference in size-at-age?
+warm <- est_sum %>% 
+  filter(temp_cat == "Mean + 2°C") %>% 
+  dplyr::select(area_f, length_mm, age_bc) %>%
+  rename(length_mm_warm = length_mm)
+
+ref <- est_sum %>% 
+  filter(temp_cat == "Mean °C") %>% 
+  dplyr::select(area_f, length_mm, age_bc) %>%
+  rename(length_mm_ref = length_mm)
+
+delta <- left_join(warm, ref, by = c("area_f", "age_bc")) %>% 
+  mutate(diff = length_mm_warm - length_mm_ref)
+  
+ggplot(delta, aes(age_bc, diff, color = factor(area_f, order$area))) +
+  geom_line() +
+  coord_cartesian(xlim = c(0, 12)) +
+  labs(x = "Age", color = "Area",
+       y = "Difference in size-at-age with 3 st.dev. increase in temperature (mm)") + 
+  scale_color_manual(values = colors)
 ```
 

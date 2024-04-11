@@ -296,11 +296,6 @@ preds_area <- nd_area %>%
 Make final plot using the area-specific model
 
 ```{r}
-# Overall t_opt from 02-fit-vbge.qmd! Update when I got final model!
-topt_lwr <- 8.771866
-topt <- 9.468607
-topt_upr <- 10.304697
-
 # Add latitude
 area <- c("BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA", "SI_EK", "SI_HA")
 nareas <- length(area)
@@ -312,16 +307,12 @@ area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) %>%
 
 ggplot(preds_area, aes(year, temp, color = temp)) + 
   facet_wrap(~factor(area, levels = area_attr$area), ncol = 4) + 
-  geom_hline(yintercept = topt_lwr, linewidth = 0.3, linetype = 2, color = "tomato3", alpha = 0.3) +
-  geom_hline(yintercept = topt, linewidth = 0.3, linetype = 1, color = "tomato3", alpha = 0.3) +
-  geom_hline(yintercept = topt_upr, linewidth = 0.3, linetype = 2, color = "tomato3", alpha = 0.3) +
   geom_line(linewidth = 0.6) +
-  labs(x = "Year", y = "Model-predicted annual average temperature") + 
+  labs(x = "Year", y = "Model-predicted annual average temperature (°C)") + 
   scale_color_viridis(option = "magma", name = "Site") +
   guides(color = "none") 
 
 ggsave(paste0(home, "/figures/annual_average_temperature.pdf"), width = 17, height = 12, units = "cm")
-#ggsave(paste0(home, "/figures/for-talks/annual_average_temperature.pdf"), width = 15, height = 10, units = "cm")
 
 # Check year range
 preds_area %>% 

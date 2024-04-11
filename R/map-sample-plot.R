@@ -91,18 +91,21 @@ df <- df %>% mutate(area_full = paste(area_name, paste0("(", area, ")")))
 
 order_facet <- df %>% arrange(desc(lat))
 
-p2 <- ggplot(vbg, aes(cohort, k_median, size = n, color = factor(area_full, levels = order$area_full),
+p2 <- ggplot(vbg, aes(cohort, A, size = n, color = factor(area_full, levels = order$area_full),
                       fill = factor(area, levels = order$area))) + 
   geom_point(shape = 21) +
   theme_sleek() + 
   guides(fill = "none", color = "none", 
-         size = guide_legend(override.aes = list(linetype = NA))) +
-  labs(x = "Cohort", y = "Median von Bertalanffy growth coefficient (*k*)", size = "#individuals") +
+         size = guide_legend(override.aes = list(linetype = NA), position = "inside")) +
+  labs(x = "Cohort", y = "Median von Bertalanffy size-corrected growth coefficient (*A*)", size = "#individuals") +
   scale_size(range = c(0.01, 2.5)) +
   facet_wrap(~factor(area_full, levels = order_facet$area_full), ncol = 2) + 
   scale_color_manual(values = alpha(colors, alpha = 1), name = "Area") +
   scale_fill_manual(values = alpha(colors, alpha = 0.6), name = "Area") +
-  theme(legend.position = c(0.11, 0.96),
+  geom_smooth(aes(cohort, A, size = n, color = factor(area_full, levels = order$area_full)),
+              method = "gam", size = 1, linewidth = 0.5, alpha = 0.5,
+              formula = y~s(x, k=5), inherit.aes = FALSE, se = FALSE) +
+  theme(legend.position.inside = c(0.11, 0.96),
         legend.key.height = unit(0.01, 'cm'), 
         legend.text = element_text(size = 6),
         legend.title = element_text(size = 7),
@@ -111,7 +114,7 @@ p2 <- ggplot(vbg, aes(cohort, k_median, size = n, color = factor(area_full, leve
 
 p2
 
-p1 + p2
+p1 + p2 + plot_annotation(tag_levels = "A")
 ggsave(paste0(home, "/figures/map_sample_size.pdf"), width = 17, height = 17, units = "cm")
 
 # p1 + (p2 & theme(strip.text = element_text(size = 7)))
