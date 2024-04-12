@@ -80,7 +80,7 @@ p1 <-
                    size = 2.8, min.segment.length = 0, seed = 1, box.padding = 0.55) +
   scale_color_manual(values = colors, name = "Area") +
   scale_fill_manual(values = colors, name = "Area") +
-  annotation_scale(bar_cols = c("grey30", "white"), height = unit(0.1, "cm")) + 
+  annotation_scale(bar_cols = c("grey40", "white"), height = unit(0.1, "cm")) + 
   annotation_north_arrow(location = "tl", which_north = "true", height = unit(0.85, "cm"),
                          width = unit(0.85, "cm"), pad_x = unit(0.1, "in"), pad_y = unit(0.1, "in"),
                          style = north_arrow_fancy_orienteering(
