@@ -128,7 +128,6 @@ IVBG <- d %>%
 
 ```
 
-
 ```{r}
 #| cache: false
 IVBG <- IVBG %>% drop_na(k) # The NAs are because the model didn't converge or because they were below the threshold age
@@ -553,72 +552,90 @@ par <- m4 %>%
             b1 = mean(b1),
             b2 = mean(b2))
 
-par
-
-temp <- tibble(temp = seq(5, 30, length.out = 500)) %>% 
+# No adaptation
+no_adapt_1 <- tibble(temp = seq(5, 15, length.out = 500)) %>% 
   mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
-         temp_sc_sq = temp_sc*temp_sc)  
+         temp_sc_sq = temp_sc*temp_sc) %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.08),
+         pop = "Cold")
 
-no_adapt <- temp %>% 
-  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.05),
-         pop = ifelse(temp <= 10, "Cold", "Medium"),
-         pop = ifelse(temp > 20, "Warm", pop))
+no_adapt_2 <- tibble(temp = seq(10, 20, length.out = 500)) %>% 
+  mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
+         temp_sc_sq = temp_sc*temp_sc) %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.08),
+         pop = "Medium",
+         growth_rate = growth_rate + 0.5)
+
+no_adapt_3 <- tibble(temp = seq(15, 25, length.out = 500)) %>% 
+  mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
+         temp_sc_sq = temp_sc*temp_sc) %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.08),
+         pop = "Warm",
+         growth_rate = growth_rate + 1)
+
+
+no_adapt <- bind_rows(no_adapt_1, no_adapt_2, no_adapt_3)
 
 p1 <- ggplot(no_adapt, aes(temp, growth_rate, color = pop)) + 
-  geom_line(size = 1.2, alpha = 0.8) + 
-  labs(tag = "No adaptation") +
+  geom_line(linewidth = 1.2, alpha = 0.8) + 
+  labs(tag = "No adaptation", y = "Increasing growth rate →", x = "Increasing temperature →", color = "Site") +
   theme(plot.tag = element_text(size = 9),
-        plot.tag.position = c(0.25, 0.9),
-        legend.position.inside = c(0.85, 0.2),
+        plot.tag.position = c(0.23, 0.94),
+        legend.position.inside = c(0.5, 0.1),
         axis.text.y = element_blank(),
-        axis.ticks.y = element_blank()) + 
-  guides(color = guide_legend(position = "inside"))
-  
+        axis.ticks.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(), 
+        legend.direction = "horizontal") + 
+  guides(color = guide_legend(position = "inside", title.position = "top", title.hjust = 0.5))
+
 
 p1
 
 # Now do "local adaption
-adapt_1 <- temp %>% 
-  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.08),
-         pop = "Cold",
-         growth_rate = growth_rate - 10,
-         temp = temp - 20) %>% 
-  filter(temp < -2)
+adapt_1 <- tibble(temp = seq(5, 15, length.out = 500)) %>% 
+  mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
+         temp_sc_sq = temp_sc*temp_sc) %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 4) + temp_sc_sq*(par$b2*0.18),
+         pop = "Cold")
 
-adapt_2 <- temp %>% 
-  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.06),
+adapt_2 <- tibble(temp = seq(10, 20, length.out = 500)) %>% 
+  mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
+         temp_sc_sq = temp_sc*temp_sc) %>% 
+  #mutate(growth_rate = par$intercept*0.95 + temp_sc*(par$b1 * 3.5) + temp_sc_sq*(par$b2*0.1),
+  mutate(growth_rate = par$intercept*0.976 + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.08),
          pop = "Medium",
-         growth_rate = growth_rate,
-         temp = temp - 6)
+         growth_rate = growth_rate + 1)
 
-adapt_3 <- temp %>% 
-  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 3) + temp_sc_sq*(par$b2*0.06),
+adapt_3 <- tibble(temp = seq(15, 25, length.out = 500)) %>% 
+  mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
+         temp_sc_sq = temp_sc*temp_sc) %>% 
+  mutate(growth_rate = par$intercept*0.715 + temp_sc*(par$b1 * 5) + temp_sc_sq*(par$b2*0.11),
          pop = "Warm",
-         growth_rate = growth_rate + 10,
-         temp = temp + 20)
+         growth_rate = growth_rate + 2)
+
+# ggplot(adapt_3, aes(temp, growth_rate, color = pop)) + 
+#   geom_line(linewidth = 1.2, alpha = 0.8) 
 
 adapt <- bind_rows(adapt_1, adapt_2, adapt_3)
 
-p2 <- ggplot(adapt, aes(temp, growth_rate, color = pop)) + 
-  geom_line(size = 1.2, alpha = 0.8) + 
-  labs(tag = "Local adaptation") + 
-  theme(axis.title.x = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
+p2 <- 
+  ggplot(adapt, aes(temp, growth_rate, color = pop)) + 
+  geom_line(linewidth = 1.2, alpha = 0.8) + 
+  labs(tag = "Local adaptation", y = "Increasing growth rate →", x = "Increasing temperature →") +
+  theme(plot.tag = element_text(size = 9),
+        plot.tag.position = c(0.2, 0.94),
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
-        plot.tag = element_text(size = 9),
-        plot.tag.position = c(0.27, 0.9)) + 
-  guides(color = "none") + 
-  coord_cartesian(xlim = c(-15, 50))
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+  guides(color = "none")
 
-p2 / p1 + 
+p1 + p2 + 
   plot_layout(axes = "collect") &
-  labs(y = "Growth rate", x = "Temperature (°C)", color = "Site") &
   scale_color_manual(values = colors[c(10, 5, 1)])
 
-ggsave(paste0(home, "/figures/concept.pdf"), width = 11, height = 15, units = "cm")
-
+ggsave(paste0(home, "/figures/concept.pdf"), width = 17, height = 8, units = "cm", device = cairo_pdf)
 ```
 
 Supplementary plot
@@ -693,13 +710,14 @@ m4k <- brm(k ~ temp_sc + temp_sq_sc + (1 + temp_sc + temp_sq_sc | area_f),
            cores = 4,
            chains = 4,
            iter = 4000,
+           seed = 99,
            family = student,
            prior = set_prior("normal(0,5)", class = "b"),
            save_pars = save_pars(all = TRUE),
-           control = list(adapt_delta = 0.95),
+           control = list(adapt_delta = 0.999),
            )
 
-conditional_effects(m4k)
+prior_summary(m4k)
 ```
 
 
@@ -709,15 +727,37 @@ m4l <- brm(linf ~ temp_sc + temp_sq_sc + (1 + temp_sc + temp_sq_sc | area_f),
            cores = 4,
            chains = 4,
            iter = 4000,
+           seed = 99,
            family = student,
            prior = set_prior("normal(0,5)", class = "b"),
            save_pars = save_pars(all = TRUE)
            )
+
+prior_summary(m4l)
 ```
 
 Plot these fits
 
 ```{r}
+# PP_check
+p1 <- pp_check(m4k) + 
+  theme(legend.position.inside = c(0.8, 0.8),
+        axis.title.x = element_markdown()) + 
+  guides(color = guide_legend(position = "inside")) + 
+  labs(x = "*k*")
+
+p2 <- pp_check(m4l) + 
+  coord_cartesian(xlim = c(0, 1000)) + 
+  theme(legend.position.inside = c(0.8, 0.8)) + 
+  guides(color = guide_legend(position = "inside")) + 
+  labs(x = expression(paste(italic(L[infinity]), " [mm]")))
+
+p1 + p2
+
+ggsave(paste0(home, "/figures/supp/k_linf_pp_check.pdf" ), width = 17, height = 11, units = "cm")
+
+
+# Conditional predictions
 m4k_pred <- dat %>%
   group_by(area) %>% 
   data_grid(temp_sc = seq_range(temp_sc, n = 100)) %>% 
@@ -787,7 +827,7 @@ pk / pl +
   plot_layout(axis = "collect", guides = "collect") & 
   theme(legend.position = "bottom")
 
-ggsave(paste0(home, "/figures/supp/k_linf__conditional.pdf" ), width = 17, height = 25, units = "cm")
+ggsave(paste0(home, "/figures/supp/k_linf_conditional.pdf" ), width = 17, height = 25, units = "cm")
 ```
 
 Print global temperature slopes
