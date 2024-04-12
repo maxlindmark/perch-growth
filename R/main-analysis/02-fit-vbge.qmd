@@ -358,6 +358,7 @@ m4 <- brm(A ~ temp_sc + temp_sq_sc + (1 + temp_sc + temp_sq_sc | area_f),
           family = student,
           prior = set_prior("normal(0,5)", class = "b"),
           save_pars = save_pars(all = TRUE),
+          control = list(adapt_delta = 0.9),
           seed = 99
           )
 
