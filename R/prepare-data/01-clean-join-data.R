@@ -33,31 +33,31 @@ theme_set(ggsidekick::theme_sleek())
 # B. READ DATA =====================================================================
 #** Biotest ========================================================================
 #**** Read in the .txt files =======================================================
-BTAB77 <- read_delim("data/Biotest/BTTAB77.txt", delim = "\t", col_names = FALSE)  
-BTAB78 <- read_delim("data/Biotest/BTTAB78.txt", delim = "\t", col_names = FALSE)  
-BTAB79 <- read_delim("data/Biotest/BTTAB79.txt", delim = "\t", col_names = FALSE)  
-BTAB80 <- read_delim("data/Biotest/BTTAB80.txt", delim = "\t", col_names = FALSE)  
-BTAB81 <- read_delim("data/Biotest/BTTAB81.txt", delim = "\t", col_names = FALSE)  
-BTAB82 <- read_delim("data/Biotest/BTTAB82.txt", delim = "\t", col_names = FALSE)  
-BTAB83 <- read_delim("data/Biotest/BTTAB83.txt", delim = "\t", col_names = FALSE)  
-BTAB84 <- read_delim("data/Biotest/BTTAB84.txt", delim = "\t", col_names = FALSE)  
-BTAB85 <- read_delim("data/Biotest/BTTAB85.txt", delim = "\t", col_names = FALSE)  
-BTAB86 <- read_delim("data/Biotest/BTTAB86.txt", delim = "\t", col_names = FALSE)  
-BTAB87 <- read_delim("data/Biotest/BTTAB87.txt", delim = "\t", col_names = FALSE)  
-BTAB88 <- read_delim("data/Biotest/BTTAB88.txt", delim = "\t", col_names = FALSE)  
-BTAB89 <- read_delim("data/Biotest/BTTAB89.txt", delim = "\t", col_names = FALSE)  
-BTAB90 <- read_delim("data/Biotest/BTTAB90A.txt", delim = "\t", col_names = FALSE)  
-BTAB91 <- read_delim("data/Biotest/BTTAB91.txt", delim = "\t", col_names = FALSE)
-BTAB92 <- read_delim("data/Biotest/BTTAB92.txt", delim = "\t", col_names = FALSE)  
-BTAB93 <- read_delim("data/Biotest/BTTAB93.txt", delim = "\t", col_names = FALSE)  
-BTAB94 <- read_delim("data/Biotest/BTTAB94.txt", delim = "\t", col_names = FALSE)
-BTAB95 <- read_delim("data/Biotest/BTTAB95.txt", delim = "\t", col_names = FALSE)  
-BTAB96 <- read_delim("data/Biotest/BTTAB96.txt", delim = "\t", col_names = FALSE)  
-BTAB97 <- read_delim("data/Biotest/BTTAB97.txt", delim = "\t", col_names = FALSE)  
-BTAB98 <- read_delim("data/Biotest/BTTAB98.txt", delim = "\t", col_names = FALSE)  
-BTAB99 <- read_delim("data/Biotest/BTTAB99.txt", delim = "\t", col_names = FALSE)  
-BTAB00 <- read_delim("data/Biotest/BTTAB00.txt", delim = "\t", col_names = FALSE)  
-BTAB01 <- read_delim("data/Biotest/BTTAB01.txt", delim = "\t", col_names = FALSE)  
+BTAB77 <- read_delim("data/growth-data/Biotest/BTTAB77.txt", delim = "\t", col_names = FALSE)  
+BTAB78 <- read_delim("data/growth-data/Biotest/BTTAB78.txt", delim = "\t", col_names = FALSE)  
+BTAB79 <- read_delim("data/growth-data/Biotest/BTTAB79.txt", delim = "\t", col_names = FALSE)  
+BTAB80 <- read_delim("data/growth-data/Biotest/BTTAB80.txt", delim = "\t", col_names = FALSE)  
+BTAB81 <- read_delim("data/growth-data/Biotest/BTTAB81.txt", delim = "\t", col_names = FALSE)  
+BTAB82 <- read_delim("data/growth-data/Biotest/BTTAB82.txt", delim = "\t", col_names = FALSE)  
+BTAB83 <- read_delim("data/growth-data/Biotest/BTTAB83.txt", delim = "\t", col_names = FALSE)  
+BTAB84 <- read_delim("data/growth-data/Biotest/BTTAB84.txt", delim = "\t", col_names = FALSE)  
+BTAB85 <- read_delim("data/growth-data/Biotest/BTTAB85.txt", delim = "\t", col_names = FALSE)  
+BTAB86 <- read_delim("data/growth-data/Biotest/BTTAB86.txt", delim = "\t", col_names = FALSE)  
+BTAB87 <- read_delim("data/growth-data/Biotest/BTTAB87.txt", delim = "\t", col_names = FALSE)  
+BTAB88 <- read_delim("data/growth-data/Biotest/BTTAB88.txt", delim = "\t", col_names = FALSE)  
+BTAB89 <- read_delim("data/growth-data/Biotest/BTTAB89.txt", delim = "\t", col_names = FALSE)  
+BTAB90 <- read_delim("data/growth-data/Biotest/BTTAB90A.txt", delim = "\t", col_names = FALSE)  
+BTAB91 <- read_delim("data/growth-data/Biotest/BTTAB91.txt", delim = "\t", col_names = FALSE)
+BTAB92 <- read_delim("data/growth-data/Biotest/BTTAB92.txt", delim = "\t", col_names = FALSE)  
+BTAB93 <- read_delim("data/growth-data/Biotest/BTTAB93.txt", delim = "\t", col_names = FALSE)  
+BTAB94 <- read_delim("data/growth-data/Biotest/BTTAB94.txt", delim = "\t", col_names = FALSE)
+BTAB95 <- read_delim("data/growth-data/Biotest/BTTAB95.txt", delim = "\t", col_names = FALSE)  
+BTAB96 <- read_delim("data/growth-data/Biotest/BTTAB96.txt", delim = "\t", col_names = FALSE)  
+BTAB97 <- read_delim("data/growth-data/Biotest/BTTAB97.txt", delim = "\t", col_names = FALSE)  
+BTAB98 <- read_delim("data/growth-data/Biotest/BTTAB98.txt", delim = "\t", col_names = FALSE)  
+BTAB99 <- read_delim("data/growth-data/Biotest/BTTAB99.txt", delim = "\t", col_names = FALSE)  
+BTAB00 <- read_delim("data/growth-data/Biotest/BTTAB00.txt", delim = "\t", col_names = FALSE)  
+BTAB01 <- read_delim("data/growth-data/Biotest/BTTAB01.txt", delim = "\t", col_names = FALSE)  
 
 BTAB_77_01 <- bind_rows(BTAB77, BTAB78, BTAB79, BTAB80, BTAB81, BTAB83,
                         BTAB84, BTAB85, BTAB86, BTAB87, BTAB88, BTAB89,
@@ -96,13 +96,13 @@ BTAB_77_01 <- BTAB_77_01 %>% mutate(ID = paste(catch_year, sample_nr, area, sep 
 
 #**** Read in the .xls files =======================================================
 # 2002 is different...
-BTabbot2002 <- readxl::read_xls("data/Biotest/BTabbot2002.xls")
-BTabbot2003 <- readxl::read_xls("data/Biotest/BTabbot2003p.xls")
-BTabbot2004 <- readxl::read_xls("data/Biotest/BTabbot2004p.xls")
-BTabbot2005 <- readxl::read_xls("data/Biotest/BTabbot2005p.xls")
+BTabbot2002 <- readxl::read_xls("data/growth-data/Biotest/BTabbot2002.xls")
+BTabbot2003 <- readxl::read_xls("data/growth-data/Biotest/BTabbot2003p.xls")
+BTabbot2004 <- readxl::read_xls("data/growth-data/Biotest/BTabbot2004p.xls")
+BTabbot2005 <- readxl::read_xls("data/growth-data/Biotest/BTabbot2005p.xls")
 
 # This is a KUL-file with multiple years, get back to it later after fixing these
-BTabbo_06_20_gear09 <- read.csv("data/Biotest/BTabbo_2006to2020_redsk09.csv", header = TRUE, sep = ";") %>% 
+BTabbo_06_20_gear09 <- read.csv("data/growth-data/Biotest/BTabbo_2006to2020_redsk09.csv", header = TRUE, sep = ";") %>% 
   rename("År1" = "Tillväxt..mm.år.1")
 
 sort(colnames(BTabbot2002))
@@ -319,17 +319,17 @@ BT_77_20 %>%
 
 #** Brunskär =======================================================================
 #**** Read in the .txt files =======================================================
-BSAB91 <- read_delim("data/Brunskär/BSTAB91.txt", delim = "\t", col_names = FALSE)  
-BSAB92 <- read_delim("data/Brunskär/BSTAB92.txt", delim = "\t", col_names = FALSE)
-BSAB93 <- read_delim("data/Brunskär/BSTAB93.txt", delim = "\t", col_names = FALSE)
-BSAB94 <- read_delim("data/Brunskär/BSTAB94.txt", delim = "\t", col_names = FALSE)
-BSAB95 <- read_delim("data/Brunskär/BSTAB95.txt", delim = "\t", col_names = FALSE) 
-BSAB96 <- read_delim("data/Brunskär/BSTAB96.txt", delim = "\t", col_names = FALSE) 
-BSAB97 <- read_delim("data/Brunskär/BSTAB97.txt", delim = "\t", col_names = FALSE) 
-BSAB98 <- read_delim("data/Brunskär/BSTAB98.txt", delim = "\t", col_names = FALSE) 
-BSAB99 <- read_delim("data/Brunskär/BSTAB99.txt", delim = "\t", col_names = FALSE) 
-BSAB00 <- read_delim("data/Brunskär/BSTAB00.txt", delim = "\t", col_names = FALSE)
-BSAB01 <- read_delim("data/Brunskär/Bstab01.txt", delim = "\t", col_names = FALSE)
+BSAB91 <- read_delim("data/growth-data/Brunskär/BSTAB91.txt", delim = "\t", col_names = FALSE)  
+BSAB92 <- read_delim("data/growth-data/Brunskär/BSTAB92.txt", delim = "\t", col_names = FALSE)
+BSAB93 <- read_delim("data/growth-data/Brunskär/BSTAB93.txt", delim = "\t", col_names = FALSE)
+BSAB94 <- read_delim("data/growth-data/Brunskär/BSTAB94.txt", delim = "\t", col_names = FALSE)
+BSAB95 <- read_delim("data/growth-data/Brunskär/BSTAB95.txt", delim = "\t", col_names = FALSE) 
+BSAB96 <- read_delim("data/growth-data/Brunskär/BSTAB96.txt", delim = "\t", col_names = FALSE) 
+BSAB97 <- read_delim("data/growth-data/Brunskär/BSTAB97.txt", delim = "\t", col_names = FALSE) 
+BSAB98 <- read_delim("data/growth-data/Brunskär/BSTAB98.txt", delim = "\t", col_names = FALSE) 
+BSAB99 <- read_delim("data/growth-data/Brunskär/BSTAB99.txt", delim = "\t", col_names = FALSE) 
+BSAB00 <- read_delim("data/growth-data/Brunskär/BSTAB00.txt", delim = "\t", col_names = FALSE)
+BSAB01 <- read_delim("data/growth-data/Brunskär/Bstab01.txt", delim = "\t", col_names = FALSE)
 
 BSAB_91_01 <- bind_rows(BSAB91, BSAB92, BSAB93, BSAB94, BSAB95, BSAB96,
                         BSAB97, BSAB98, BSAB99, BSAB00, BSAB01)
@@ -370,13 +370,13 @@ BSAB_91_01 <- BSAB_91_01 %>% mutate(ID = paste(catch_year, sample_nr, area, sep 
 
 #**** Read in the .xls files =======================================================
 # This is not a t-file! (growth)
-# BSabboa2002 <- readxl::read_xls("data/Brunskär/BSabboa2002.xls")
+# BSabboa2002 <- readxl::read_xls("data/growth-data/Brunskär/BSabboa2002.xls")
 
 # These are t-files
-BSabboa2003 <- readxl::read_xls("data/Brunskär/BSabbot2003p.xls") # specify which tab here... 
-BSabboa2004 <- readxl::read_xls("data/Brunskär/BSabbot2004p.xls")
-BSabboa2005 <- readxl::read_xls("data/Brunskär/BSabbot2005p.xls")
-BSabboa2006 <- readxl::read_xls("data/Brunskär/BSabbot2006p.xls")
+BSabboa2003 <- readxl::read_xls("data/growth-data/Brunskär/BSabbot2003p.xls") # specify which tab here... 
+BSabboa2004 <- readxl::read_xls("data/growth-data/Brunskär/BSabbot2004p.xls")
+BSabboa2005 <- readxl::read_xls("data/growth-data/Brunskär/BSabbot2005p.xls")
+BSabboa2006 <- readxl::read_xls("data/growth-data/Brunskär/BSabbot2006p.xls")
 
 colnames(BSabboa2003)
 colnames(BSabboa2004)
@@ -509,31 +509,31 @@ BS_91_06 %>%
 
 #** Finbo ==========================================================================
 #**** Read in the .txt files =======================================================
-FBAB77 <- read_delim("data/Finbo/FBTAB77.txt", delim = "\t", col_names = FALSE)  
-FBAB78 <- read_delim("data/Finbo/FBTAB78.txt", delim = "\t", col_names = FALSE)  
-FBAB79 <- read_delim("data/Finbo/FBTAB79.txt", delim = "\t", col_names = FALSE)  
-FBAB80 <- read_delim("data/Finbo/FBTAB80.txt", delim = "\t", col_names = FALSE)  
-FBAB81 <- read_delim("data/Finbo/FBTAB81.txt", delim = "\t", col_names = FALSE)  
-# Does not exist: FBAB82 <- read_delim("data/Finbo/FBTAB82.txt", delim = "\t", col_names = FALSE)  
-FBAB83 <- read_delim("data/Finbo/FBTAB83.txt", delim = "\t", col_names = FALSE)  
-FBAB84 <- read_delim("data/Finbo/FBTAB84.txt", delim = "\t", col_names = FALSE)  
-FBAB85 <- read_delim("data/Finbo/FBTAB85.txt", delim = "\t", col_names = FALSE)  
-FBAB86 <- read_delim("data/Finbo/FBTAB86.txt", delim = "\t", col_names = FALSE)  
-FBAB87 <- read_delim("data/Finbo/FBTAB87.txt", delim = "\t", col_names = FALSE)  
-FBAB88 <- read_delim("data/Finbo/FBTAB88.txt", delim = "\t", col_names = FALSE)  
-FBAB89 <- read_delim("data/Finbo/FBTAB89.txt", delim = "\t", col_names = FALSE)  
-FBAB90 <- read_delim("data/Finbo/FBTAB90.txt", delim = "\t", col_names = FALSE)  
-FBAB91 <- read_delim("data/Finbo/FBTAB91.txt", delim = "\t", col_names = FALSE)
-FBAB92 <- read_delim("data/Finbo/FBTAB92.txt", delim = "\t", col_names = FALSE)  
-FBAB93 <- read_delim("data/Finbo/FBTAB93.txt", delim = "\t", col_names = FALSE)  
-FBAB94 <- read_delim("data/Finbo/FBTAB94.txt", delim = "\t", col_names = FALSE)
-FBAB95 <- read_delim("data/Finbo/FBTAB95.txt", delim = "\t", col_names = FALSE)  
-FBAB96 <- read_delim("data/Finbo/FBTAB96.txt", delim = "\t", col_names = FALSE)  
-FBAB97 <- read_delim("data/Finbo/FBTAB97.txt", delim = "\t", col_names = FALSE)  
-FBAB98 <- read_delim("data/Finbo/FBTAB98.txt", delim = "\t", col_names = FALSE)  
-FBAB99 <- read_delim("data/Finbo/FBTAB99.txt", delim = "\t", col_names = FALSE)  
-FBAB00 <- read_delim("data/Finbo/Fbtab00a.txt", delim = "\t", col_names = FALSE)  
-FBAB01 <- read_delim("data/Finbo/Fbtab01.txt", delim = "\t", col_names = FALSE)  
+FBAB77 <- read_delim("data/growth-data/Finbo/FBTAB77.txt", delim = "\t", col_names = FALSE)  
+FBAB78 <- read_delim("data/growth-data/Finbo/FBTAB78.txt", delim = "\t", col_names = FALSE)  
+FBAB79 <- read_delim("data/growth-data/Finbo/FBTAB79.txt", delim = "\t", col_names = FALSE)  
+FBAB80 <- read_delim("data/growth-data/Finbo/FBTAB80.txt", delim = "\t", col_names = FALSE)  
+FBAB81 <- read_delim("data/growth-data/Finbo/FBTAB81.txt", delim = "\t", col_names = FALSE)  
+# Does not exist: FBAB82 <- read_delim("data/growth-data/Finbo/FBTAB82.txt", delim = "\t", col_names = FALSE)  
+FBAB83 <- read_delim("data/growth-data/Finbo/FBTAB83.txt", delim = "\t", col_names = FALSE)  
+FBAB84 <- read_delim("data/growth-data/Finbo/FBTAB84.txt", delim = "\t", col_names = FALSE)  
+FBAB85 <- read_delim("data/growth-data/Finbo/FBTAB85.txt", delim = "\t", col_names = FALSE)  
+FBAB86 <- read_delim("data/growth-data/Finbo/FBTAB86.txt", delim = "\t", col_names = FALSE)  
+FBAB87 <- read_delim("data/growth-data/Finbo/FBTAB87.txt", delim = "\t", col_names = FALSE)  
+FBAB88 <- read_delim("data/growth-data/Finbo/FBTAB88.txt", delim = "\t", col_names = FALSE)  
+FBAB89 <- read_delim("data/growth-data/Finbo/FBTAB89.txt", delim = "\t", col_names = FALSE)  
+FBAB90 <- read_delim("data/growth-data/Finbo/FBTAB90.txt", delim = "\t", col_names = FALSE)  
+FBAB91 <- read_delim("data/growth-data/Finbo/FBTAB91.txt", delim = "\t", col_names = FALSE)
+FBAB92 <- read_delim("data/growth-data/Finbo/FBTAB92.txt", delim = "\t", col_names = FALSE)  
+FBAB93 <- read_delim("data/growth-data/Finbo/FBTAB93.txt", delim = "\t", col_names = FALSE)  
+FBAB94 <- read_delim("data/growth-data/Finbo/FBTAB94.txt", delim = "\t", col_names = FALSE)
+FBAB95 <- read_delim("data/growth-data/Finbo/FBTAB95.txt", delim = "\t", col_names = FALSE)  
+FBAB96 <- read_delim("data/growth-data/Finbo/FBTAB96.txt", delim = "\t", col_names = FALSE)  
+FBAB97 <- read_delim("data/growth-data/Finbo/FBTAB97.txt", delim = "\t", col_names = FALSE)  
+FBAB98 <- read_delim("data/growth-data/Finbo/FBTAB98.txt", delim = "\t", col_names = FALSE)  
+FBAB99 <- read_delim("data/growth-data/Finbo/FBTAB99.txt", delim = "\t", col_names = FALSE)  
+FBAB00 <- read_delim("data/growth-data/Finbo/Fbtab00a.txt", delim = "\t", col_names = FALSE)  
+FBAB01 <- read_delim("data/growth-data/Finbo/Fbtab01.txt", delim = "\t", col_names = FALSE)  
 
 FBAB_77_01 <- bind_rows(FBAB77, FBAB78, FBAB79, FBAB80, FBAB81, FBAB83,
                         FBAB84, FBAB85, FBAB86, FBAB87, FBAB88, FBAB89,
@@ -572,14 +572,14 @@ FBAB_77_01 <- FBAB_77_01 %>% mutate(ID = paste(catch_year, sample_nr, area, sep 
 
 #**** Read in the .xls files =======================================================
 # 2002 is different...
-FBabbo2002 <- readxl::read_xls("data/Finbo/FBabbot2002p.xls")
-FBabbo2003 <- readxl::read_xls("data/Finbo/FBabbot2003p.xls")
-FBabbo2004 <- readxl::read_xls("data/Finbo/FBabbot2004p.xls")
-FBabbo2005 <- readxl::read_xls("data/Finbo/FBabbot2005p.xls")
-FBabbo2006 <- readxl::read_xls("data/Finbo/FBabbot2006p.xls")
+FBabbo2002 <- readxl::read_xls("data/growth-data/Finbo/FBabbot2002p.xls")
+FBabbo2003 <- readxl::read_xls("data/growth-data/Finbo/FBabbot2003p.xls")
+FBabbo2004 <- readxl::read_xls("data/growth-data/Finbo/FBabbot2004p.xls")
+FBabbo2005 <- readxl::read_xls("data/growth-data/Finbo/FBabbot2005p.xls")
+FBabbo2006 <- readxl::read_xls("data/growth-data/Finbo/FBabbot2006p.xls")
 
 # This is a KUL-file with multiple years, get back to it later after fixing these
-FBabbo_07_20_gear64_aug <- read.csv("data/Finbo/FBabbo_2007to2020_gear64aug.csv", header = TRUE, sep = ";") %>% 
+FBabbo_07_20_gear64_aug <- read.csv("data/growth-data/Finbo/FBabbo_2007to2020_gear64aug.csv", header = TRUE, sep = ";") %>% 
   rename("År1" = "Tillväxt..mm.år.1")
 
 sort(colnames(FBabbo2002))
@@ -833,38 +833,38 @@ FB_77_20 %>%
 
 #** Forsmark =======================================================================
 #**** Read in the .txt files =======================================================
-FMAB70 <- read_delim("data/Forsmark/FMTAB70.TXT", delim = "\t", col_names = FALSE)
-FMAB71 <- read_delim("data/Forsmark/FMTAB71.TXT", delim = "\t", col_names = FALSE)
-FMAB72 <- read_delim("data/Forsmark/FMTAB72.TXT", delim = "\t", col_names = FALSE)
-FMAB73 <- read_delim("data/Forsmark/FMTAB73.TXT", delim = "\t", col_names = FALSE)
-FMAB74 <- read_delim("data/Forsmark/FMTAB74.TXT", delim = "\t", col_names = FALSE)
-FMAB75 <- read_delim("data/Forsmark/FMTAB75.TXT", delim = "\t", col_names = FALSE)
-FMAB76 <- read_delim("data/Forsmark/FMTAB76.TXT", delim = "\t", col_names = FALSE)
-FMAB77 <- read_delim("data/Forsmark/FMTAB77.TXT", delim = "\t", col_names = FALSE)
-FMAB78 <- read_delim("data/Forsmark/FMTAB78.TXT", delim = "\t", col_names = FALSE)
-FMAB79 <- read_delim("data/Forsmark/FMTAB79.TXT", delim = "\t", col_names = FALSE)
-FMAB80 <- read_delim("data/Forsmark/FMTAB80.TXT", delim = "\t", col_names = FALSE)
-FMAB81 <- read_delim("data/Forsmark/Fmtab81.TXT", delim = "\t", col_names = FALSE)
-FMAB82 <- read_delim("data/Forsmark/FMTAB82.TXT", delim = "\t", col_names = FALSE)
-FMAB83 <- read_delim("data/Forsmark/FMTAB83.TXT", delim = "\t", col_names = FALSE)
-FMAB84 <- read_delim("data/Forsmark/FMTAB84A.TXT", delim = "\t", col_names = FALSE)
-FMAB85 <- read_delim("data/Forsmark/FMTAB85.TXT", delim = "\t", col_names = FALSE)
-FMAB86 <- read_delim("data/Forsmark/FMTAB86A.TXT", delim = "\t", col_names = FALSE)
-FMAB87 <- read_delim("data/Forsmark/FMTAB87.TXT", delim = "\t", col_names = FALSE)
-FMAB88 <- read_delim("data/Forsmark/FMTAB88.TXT", delim = "\t", col_names = FALSE)
-FMAB89 <- read_delim("data/Forsmark/FMTAB89.TXT", delim = "\t", col_names = FALSE)
-FMAB90 <- read_delim("data/Forsmark/FMTAB90.TXT", delim = "\t", col_names = FALSE)
-FMAB91 <- read_delim("data/Forsmark/FMTAB91.TXT", delim = "\t", col_names = FALSE)
-FMAB92 <- read_delim("data/Forsmark/FMTAB92.TXT", delim = "\t", col_names = FALSE)
-FMAB93 <- read_delim("data/Forsmark/FMTAB93.TXT", delim = "\t", col_names = FALSE)
-FMAB94 <- read_delim("data/Forsmark/FMTAB94.TXT", delim = "\t", col_names = FALSE)
-FMAB95 <- read_delim("data/Forsmark/FMTAB95.TXT", delim = "\t", col_names = FALSE)
-FMAB96 <- read_delim("data/Forsmark/FMTAB96.TXT", delim = "\t", col_names = FALSE)
-FMAB97 <- read_delim("data/Forsmark/FMTAB97.TXT", delim = "\t", col_names = FALSE)
-FMAB98 <- read_delim("data/Forsmark/Fmtab98.TXT", delim = "\t", col_names = FALSE)
-FMAB99 <- read_delim("data/Forsmark/FMTAB99.TXT", delim = "\t", col_names = FALSE)
-FMAB00 <- read_delim("data/Forsmark/FMTAB00.TXT", delim = "\t", col_names = FALSE)
-FMAB01 <- read_delim("data/Forsmark/FMTAB01.TXT", delim = "\t", col_names = FALSE)
+FMAB70 <- read_delim("data/growth-data/Forsmark/FMTAB70.TXT", delim = "\t", col_names = FALSE)
+FMAB71 <- read_delim("data/growth-data/Forsmark/FMTAB71.TXT", delim = "\t", col_names = FALSE)
+FMAB72 <- read_delim("data/growth-data/Forsmark/FMTAB72.TXT", delim = "\t", col_names = FALSE)
+FMAB73 <- read_delim("data/growth-data/Forsmark/FMTAB73.TXT", delim = "\t", col_names = FALSE)
+FMAB74 <- read_delim("data/growth-data/Forsmark/FMTAB74.TXT", delim = "\t", col_names = FALSE)
+FMAB75 <- read_delim("data/growth-data/Forsmark/FMTAB75.TXT", delim = "\t", col_names = FALSE)
+FMAB76 <- read_delim("data/growth-data/Forsmark/FMTAB76.TXT", delim = "\t", col_names = FALSE)
+FMAB77 <- read_delim("data/growth-data/Forsmark/FMTAB77.TXT", delim = "\t", col_names = FALSE)
+FMAB78 <- read_delim("data/growth-data/Forsmark/FMTAB78.TXT", delim = "\t", col_names = FALSE)
+FMAB79 <- read_delim("data/growth-data/Forsmark/FMTAB79.TXT", delim = "\t", col_names = FALSE)
+FMAB80 <- read_delim("data/growth-data/Forsmark/FMTAB80.TXT", delim = "\t", col_names = FALSE)
+FMAB81 <- read_delim("data/growth-data/Forsmark/Fmtab81.TXT", delim = "\t", col_names = FALSE)
+FMAB82 <- read_delim("data/growth-data/Forsmark/FMTAB82.TXT", delim = "\t", col_names = FALSE)
+FMAB83 <- read_delim("data/growth-data/Forsmark/FMTAB83.TXT", delim = "\t", col_names = FALSE)
+FMAB84 <- read_delim("data/growth-data/Forsmark/FMTAB84A.TXT", delim = "\t", col_names = FALSE)
+FMAB85 <- read_delim("data/growth-data/Forsmark/FMTAB85.TXT", delim = "\t", col_names = FALSE)
+FMAB86 <- read_delim("data/growth-data/Forsmark/FMTAB86A.TXT", delim = "\t", col_names = FALSE)
+FMAB87 <- read_delim("data/growth-data/Forsmark/FMTAB87.TXT", delim = "\t", col_names = FALSE)
+FMAB88 <- read_delim("data/growth-data/Forsmark/FMTAB88.TXT", delim = "\t", col_names = FALSE)
+FMAB89 <- read_delim("data/growth-data/Forsmark/FMTAB89.TXT", delim = "\t", col_names = FALSE)
+FMAB90 <- read_delim("data/growth-data/Forsmark/FMTAB90.TXT", delim = "\t", col_names = FALSE)
+FMAB91 <- read_delim("data/growth-data/Forsmark/FMTAB91.TXT", delim = "\t", col_names = FALSE)
+FMAB92 <- read_delim("data/growth-data/Forsmark/FMTAB92.TXT", delim = "\t", col_names = FALSE)
+FMAB93 <- read_delim("data/growth-data/Forsmark/FMTAB93.TXT", delim = "\t", col_names = FALSE)
+FMAB94 <- read_delim("data/growth-data/Forsmark/FMTAB94.TXT", delim = "\t", col_names = FALSE)
+FMAB95 <- read_delim("data/growth-data/Forsmark/FMTAB95.TXT", delim = "\t", col_names = FALSE)
+FMAB96 <- read_delim("data/growth-data/Forsmark/FMTAB96.TXT", delim = "\t", col_names = FALSE)
+FMAB97 <- read_delim("data/growth-data/Forsmark/FMTAB97.TXT", delim = "\t", col_names = FALSE)
+FMAB98 <- read_delim("data/growth-data/Forsmark/Fmtab98.TXT", delim = "\t", col_names = FALSE)
+FMAB99 <- read_delim("data/growth-data/Forsmark/FMTAB99.TXT", delim = "\t", col_names = FALSE)
+FMAB00 <- read_delim("data/growth-data/Forsmark/FMTAB00.TXT", delim = "\t", col_names = FALSE)
+FMAB01 <- read_delim("data/growth-data/Forsmark/FMTAB01.TXT", delim = "\t", col_names = FALSE)
 
 FM_71_01 <- bind_rows(FMAB70, FMAB71, FMAB72, FMAB73, FMAB74, FMAB75, FMAB76, FMAB77, 
                       FMAB78, FMAB79, FMAB80, FMAB81, FMAB82, FMAB83, FMAB84, FMAB85, 
@@ -904,22 +904,22 @@ FM_71_01 <- FM_71_01 %>% mutate(ID = paste(catch_year, sample_nr, area, sep = "_
 
 
 #**** Read in the .xls files =======================================================
-FMabboa2004 <- readxl::read_xls("data/Forsmark/FMabbot2004p.xls") %>%
+FMabboa2004 <- readxl::read_xls("data/growth-data/Forsmark/FMabbot2004p.xls") %>%
   rename("Fiskeår" = "Fångstår", "Redskap.kod" = "Redskap", "Total.längd.mm" = "Totallängd mm")
 
-FMabboa2005 <- readxl::read_xls("data/Forsmark/FMabbot2005p.xls") %>%
+FMabboa2005 <- readxl::read_xls("data/growth-data/Forsmark/FMabbot2005p.xls") %>%
   rename("Fiskeår" = "Fångstår", "Redskap.kod" = "Redskap", "Total.längd.mm" = "Totallängd mm")
 
-FMabboa2006 <- readxl::read_xls("data/Forsmark/FMabbot2006p.xls") %>%
+FMabboa2006 <- readxl::read_xls("data/growth-data/Forsmark/FMabbot2006p.xls") %>%
   rename("Fiskeår" = "Fångstår", "Redskap.kod" = "Redskap", "Total.längd.mm" = "Totallängd mm")
 
-FMabbo_02_and_17_20_gear09_aug <- read.csv("data/Forsmark/FMabbo_2002and2017to2020_gear09aug.csv", header = TRUE, sep = ";") %>% 
+FMabbo_02_and_17_20_gear09_aug <- read.csv("data/growth-data/Forsmark/FMabbo_2002and2017to2020_gear09aug.csv", header = TRUE, sep = ";") %>% 
   rename("År1" = "Tillväxt..mm.år.1", "Löpnummer" = "Löpnr")
 
-FMabbo_02_03_and_07_20_gear64_aug <- read.csv("data/Forsmark/FMabbo_2002to2003and2007to2020_gear64aug.csv", header = TRUE, sep = ";") %>% 
+FMabbo_02_03_and_07_20_gear64_aug <- read.csv("data/growth-data/Forsmark/FMabbo_2002to2003and2007to2020_gear64aug.csv", header = TRUE, sep = ";") %>% 
   rename("År1" = "Tillväxt..mm.år.1", "Löpnummer" = "Löpnr")
 
-FMabbo_09_20_gear09_oct <- read.csv("data/Forsmark/FMabbo_2009to2020_gear09okt.csv", header = TRUE, sep = ";") %>% 
+FMabbo_09_20_gear09_oct <- read.csv("data/growth-data/Forsmark/FMabbo_2009to2020_gear09okt.csv", header = TRUE, sep = ";") %>% 
   rename("År1" = "Tillväxt..mm.år.1", "Löpnummer" = "Löpnr")
 
 FMabboa2004$Redskap.kod <- as.character(FMabboa2004$Redskap.kod)
@@ -1089,9 +1089,9 @@ FM_71_20 |> filter(ID == "1978_93_FM") |> as.data.frame()
 
 #** Holmön =========================================================================
 #**** Read in the .xls files =======================================================
-HOabboa88 <- read.csv("data/Holmön/HOabbo_1988_pilot.csv", header = TRUE, sep = ";")
-HOabboa89_01 <- read.csv("data/Holmön/HOabbo_1989to2001.csv", header = TRUE, sep = ";")
-HOabboa03_20 <- read.csv("data/Holmön/HOabbo_2003to2020.csv", header = TRUE, sep = ";")
+HOabboa88 <- read.csv("data/growth-data/Holmön/HOabbo_1988_pilot.csv", header = TRUE, sep = ";")
+HOabboa89_01 <- read.csv("data/growth-data/Holmön/HOabbo_1989to2001.csv", header = TRUE, sep = ";")
+HOabboa03_20 <- read.csv("data/growth-data/Holmön/HOabbo_2003to2020.csv", header = TRUE, sep = ";")
 
 HOabboa88$Somatisk.vikt <- as.character(HOabboa88$Somatisk.vikt)
 HOabboa89_01$Somatisk.vikt <- as.character(HOabboa89_01$Somatisk.vikt)
@@ -1171,7 +1171,7 @@ HO_88_20 %>%
 
 #** Kvädöfjärden ===================================================================
 #**** Read in the .txt files =======================================================
-JMAB84 <- read_delim("data/Kvädöfjärden/JMTAB84.TXT", delim = "\t", col_names = FALSE)  
+JMAB84 <- read_delim("data/growth-data/Kvädöfjärden/JMTAB84.TXT", delim = "\t", col_names = FALSE)  
 
 JMAB84 <- JMAB84 %>% 
   separate(X1, 
@@ -1206,14 +1206,14 @@ JMAB84 <- JMAB84 %>% mutate(ID = paste(catch_year, sample_nr, area, sep = "_")) 
 
 #**** Read in the .xls files =======================================================
 # And these files that are in csv
-JMAB_63_81_and_85_88 <- read.csv("data/Kvädöfjärden/JMabbo_1963to1981and1985to1988.csv", header = TRUE, sep = ";")
-JMAB_82_83 <- read.csv("data/Kvädöfjärden/JMabbo_1982to1983.csv", header = TRUE, sep = ";")
-JMAB_86 <- read.csv("data/Kvädöfjärden/JMabbo_1986.csv", header = TRUE, sep = ";") 
-JMAB_87_and_89_19 <- read.csv("data/Kvädöfjärden/JMabbo_1987and1989to2019.csv", header = TRUE, sep = ";")
-JMabbo_19_20_gear10 <- read.csv("data/Kvädöfjärden/JMabbo_2019to2020_gear10.csv", header = TRUE, sep = ";")
-JMabbo_19_20_gear52 <- read.csv("data/Kvädöfjärden/JMabbo_2019to2020_gear52.csv", header = TRUE, sep = ";")
-JMabbo_19_20_gear64_aug <- read.csv("data/Kvädöfjärden/JMabbo_2019to2020_gear64_aug.csv", header = TRUE, sep = ";")
-JMabbo_19_20_gear64_okt <- read.csv("data/Kvädöfjärden/JMabbo_2019to2020_gear64_okt.csv", header = TRUE, sep = ";")
+JMAB_63_81_and_85_88 <- read.csv("data/growth-data/Kvädöfjärden/JMabbo_1963to1981and1985to1988.csv", header = TRUE, sep = ";")
+JMAB_82_83 <- read.csv("data/growth-data/Kvädöfjärden/JMabbo_1982to1983.csv", header = TRUE, sep = ";")
+JMAB_86 <- read.csv("data/growth-data/Kvädöfjärden/JMabbo_1986.csv", header = TRUE, sep = ";") 
+JMAB_87_and_89_19 <- read.csv("data/growth-data/Kvädöfjärden/JMabbo_1987and1989to2019.csv", header = TRUE, sep = ";")
+JMabbo_19_20_gear10 <- read.csv("data/growth-data/Kvädöfjärden/JMabbo_2019to2020_gear10.csv", header = TRUE, sep = ";")
+JMabbo_19_20_gear52 <- read.csv("data/growth-data/Kvädöfjärden/JMabbo_2019to2020_gear52.csv", header = TRUE, sep = ";")
+JMabbo_19_20_gear64_aug <- read.csv("data/growth-data/Kvädöfjärden/JMabbo_2019to2020_gear64_aug.csv", header = TRUE, sep = ";")
+JMabbo_19_20_gear64_okt <- read.csv("data/growth-data/Kvädöfjärden/JMabbo_2019to2020_gear64_okt.csv", header = TRUE, sep = ";")
 
 # Remove some problematic columns we any don't use, and standardize names
 JMAB_63_81_and_85_88 <- JMAB_63_81_and_85_88 %>% dplyr::select(-Total.vikt, -Somatisk.vikt)
@@ -1320,17 +1320,17 @@ JM_63_20 %>%
 
 #** Muskö ==========================================================================
 #**** Read in the .txt files =======================================================
-MUAB91 <- read_delim("data/Muskö/MUTAB91.txt", delim = "\t", col_names = FALSE)  
-MUAB92 <- read_delim("data/Muskö/MUTAB92.txt", delim = "\t", col_names = FALSE)  
-MUAB93 <- read_delim("data/Muskö/MUTAB93.txt", delim = "\t", col_names = FALSE)  
-MUAB94 <- read_delim("data/Muskö/MUTAB94.txt", delim = "\t", col_names = FALSE)
-MUAB95 <- read_delim("data/Muskö/MUTAB95.txt", delim = "\t", col_names = FALSE)  
-MUAB96 <- read_delim("data/Muskö/MUTAB96.txt", delim = "\t", col_names = FALSE)  
-MUAB97 <- read_delim("data/Muskö/MUTAB97.txt", delim = "\t", col_names = FALSE)  
-MUAB98 <- read_delim("data/Muskö/MUTAB98.txt", delim = "\t", col_names = FALSE)  
-MUAB99 <- read_delim("data/Muskö/MUTAB99.txt", delim = "\t", col_names = FALSE)  
-MUAB00 <- read_delim("data/Muskö/MUTAB00.txt", delim = "\t", col_names = FALSE)  
-MUAB01 <- read_delim("data/Muskö/MUTAB01.txt", delim = "\t", col_names = FALSE)  
+MUAB91 <- read_delim("data/growth-data/Muskö/MUTAB91.txt", delim = "\t", col_names = FALSE)  
+MUAB92 <- read_delim("data/growth-data/Muskö/MUTAB92.txt", delim = "\t", col_names = FALSE)  
+MUAB93 <- read_delim("data/growth-data/Muskö/MUTAB93.txt", delim = "\t", col_names = FALSE)  
+MUAB94 <- read_delim("data/growth-data/Muskö/MUTAB94.txt", delim = "\t", col_names = FALSE)
+MUAB95 <- read_delim("data/growth-data/Muskö/MUTAB95.txt", delim = "\t", col_names = FALSE)  
+MUAB96 <- read_delim("data/growth-data/Muskö/MUTAB96.txt", delim = "\t", col_names = FALSE)  
+MUAB97 <- read_delim("data/growth-data/Muskö/MUTAB97.txt", delim = "\t", col_names = FALSE)  
+MUAB98 <- read_delim("data/growth-data/Muskö/MUTAB98.txt", delim = "\t", col_names = FALSE)  
+MUAB99 <- read_delim("data/growth-data/Muskö/MUTAB99.txt", delim = "\t", col_names = FALSE)  
+MUAB00 <- read_delim("data/growth-data/Muskö/MUTAB00.txt", delim = "\t", col_names = FALSE)  
+MUAB01 <- read_delim("data/growth-data/Muskö/MUTAB01.txt", delim = "\t", col_names = FALSE)  
 
 MUAB_91_01 <- bind_rows(MUAB91, MUAB92, MUAB93, MUAB94, MUAB95, MUAB96,
                         MUAB97, MUAB98, MUAB99, MUAB00, MUAB01)
@@ -1367,9 +1367,9 @@ MUAB_91_01 <- MUAB_91_01 %>% mutate(ID = paste(catch_year, sample_nr, area, sep 
 
 
 #**** Read in the .xls files =======================================================
-MUabboa2002 <- readxl::read_xls("data/Muskö/MUabbot2002.xls")
-MUabboa2003 <- readxl::read_xls("data/Muskö/MUabbot2003p.xls")
-MUabboa2004 <- readxl::read_xls("data/Muskö/MUabbot2004p.xls")
+MUabboa2002 <- readxl::read_xls("data/growth-data/Muskö/MUabbot2002.xls")
+MUabboa2003 <- readxl::read_xls("data/growth-data/Muskö/MUabbot2003p.xls")
+MUabboa2004 <- readxl::read_xls("data/growth-data/Muskö/MUabbot2004p.xls")
 
 sort(colnames(MUabboa2003))
 sort(colnames(MUabboa2003))
@@ -1484,13 +1484,13 @@ MU_91_04 %>%
 #**** Read in the .txt files =======================================================
 # These text files have encoding issues.. I have changed that manually. Originals are saved
 # These are bl 67
-RAB90 <- read_delim("data/Råneå/RÅTAB90.TXT", delim = "\t", col_names = FALSE)
-RAB96 <- read_delim("data/Råneå/RÅTAB96.TXT", delim = "\t", col_names = FALSE)
-RAB97 <- read_delim("data/Råneå/RÅTAB97.TXT", delim = "\t", col_names = FALSE) 
-RAB98 <- read_delim("data/Råneå/RÅTAB98.TXT", delim = "\t", col_names = FALSE) 
-RAB99 <- read_delim("data/Råneå/RÅTAB99.TXT", delim = "\t", col_names = FALSE)
-RAB00 <- read_delim("data/Råneå/RÅTAB00.TXT", delim = "\t", col_names = FALSE)
-RAB01 <- read_delim("data/Råneå/RÅTAB01.TXT", delim = "\t", col_names = FALSE) 
+RAB90 <- read_delim("data/growth-data/Råneå/RÅTAB90.TXT", delim = "\t", col_names = FALSE)
+RAB96 <- read_delim("data/growth-data/Råneå/RÅTAB96.TXT", delim = "\t", col_names = FALSE)
+RAB97 <- read_delim("data/growth-data/Råneå/RÅTAB97.TXT", delim = "\t", col_names = FALSE) 
+RAB98 <- read_delim("data/growth-data/Råneå/RÅTAB98.TXT", delim = "\t", col_names = FALSE) 
+RAB99 <- read_delim("data/growth-data/Råneå/RÅTAB99.TXT", delim = "\t", col_names = FALSE)
+RAB00 <- read_delim("data/growth-data/Råneå/RÅTAB00.TXT", delim = "\t", col_names = FALSE)
+RAB01 <- read_delim("data/growth-data/Råneå/RÅTAB01.TXT", delim = "\t", col_names = FALSE) 
 
 # They have different sheets (i.e., bl, the first two values of the string), so I can't match them all at once
 #RA_85_86 <- bind_rows(RAB85, RAB86) # bl 57
@@ -1546,11 +1546,11 @@ RA_90_01 <- RA_90_01 %>%
 RA_90_01 <- RA_90_01 %>% mutate(ID = paste(catch_year, sample_nr, area, sep = "_")) # add date + gear here as well
 
 #**** Read in the .xls files =======================================================
-RAabboa2003 <- readxl::read_xls("data/Råneå/RAabbot2003p.xls")
-RAabboa2004 <- readxl::read_xls("data/Råneå/RAabbot2004p.xls")
-RAabboa2005 <- readxl::read_xls("data/Råneå/RAabbot2005p.xls")
+RAabboa2003 <- readxl::read_xls("data/growth-data/Råneå/RAabbot2003p.xls")
+RAabboa2004 <- readxl::read_xls("data/growth-data/Råneå/RAabbot2004p.xls")
+RAabboa2005 <- readxl::read_xls("data/growth-data/Råneå/RAabbot2005p.xls")
 
-RAabboa_08_10 <- read.csv("data/Råneå/RAabbo_2008and2010.csv", header = TRUE, sep = ";") %>% 
+RAabboa_08_10 <- read.csv("data/growth-data/Råneå/RAabbo_2008and2010.csv", header = TRUE, sep = ";") %>% 
   rename("År1" = "Tillväxt..mm.år.1", "Löpnummer" = "Löpnr")
 
 RAabboa2003$Kön <- as.character(RAabboa2003$Kön)
@@ -1706,7 +1706,7 @@ RA_90_10 %>%
 #** Simpevarp ======================================================================
 #**** Read in the .xls files =======================================================
 #**** Old file from Janne ==========================================================
-SIAB_63_08 <- read.csv("data/Simpevarp/SI Individdata 1963-2008.csv", header = TRUE, sep = ";") 
+SIAB_63_08 <- read.csv("data/growth-data/Simpevarp/SI Individdata 1963-2008.csv", header = TRUE, sep = ";") 
 
 # Here we assume that section 1 and 5 are two distinct areas
 unique(SIAB_63_08$SEK)
@@ -1757,14 +1757,14 @@ SIAB_63_08 <- SIAB_63_08 %>% mutate(ID = paste(catch_year, sample_nr, area, sep 
 
 
 #**** Newer data (KUL) =============================================================
-SIAB_19 <- read.csv("data/Simpevarp/SIabbo_Hamne2019.csv", header = TRUE, sep = ";") %>% 
+SIAB_19 <- read.csv("data/growth-data/Simpevarp/SIabbo_Hamne2019.csv", header = TRUE, sep = ";") %>% 
   mutate(area = "SI_HA") 
 
-SIAB_07_18 <- read.csv("data/Simpevarp/SIabbo_2007to2018_Hamne.csv", header = TRUE, sep = ";") %>% 
+SIAB_07_18 <- read.csv("data/growth-data/Simpevarp/SIabbo_2007to2018_Hamne.csv", header = TRUE, sep = ";") %>% 
   mutate(area = "SI_HA") %>% 
   mutate_at(c("Total.vikt", "Somatisk.vikt"), as.numeric)
 
-SIAB_07_19 <- read.csv("data/Simpevarp/SIabbo_2007to2019_Ek.csv", header = TRUE, sep = ";") %>% 
+SIAB_07_19 <- read.csv("data/growth-data/Simpevarp/SIabbo_2007to2019_Ek.csv", header = TRUE, sep = ";") %>% 
   mutate(area = "SI_EK")  
 
 SIAB_07_19_tot <- bind_rows(SIAB_19, SIAB_07_18, SIAB_07_19)
@@ -1840,7 +1840,7 @@ SI_63_19 %>%
 
 #** Torhamn ========================================================================
 #**** Read in the .xls files =======================================================
-THAB_03_20 <- read.csv("data/Torhamn/THabbo.csv", header = TRUE, sep = ";")
+THAB_03_20 <- read.csv("data/growth-data/Torhamn/THabbo.csv", header = TRUE, sep = ";")
 head(THAB_03_20)
 
 # Go from wide to long data
@@ -1906,13 +1906,13 @@ TH_03_20 %>%
 
 #** Vinö ==========================================================================
 #**** Read in the .txt files =======================================================
-VIAB95 <- read_delim("data/Vinö/VNTAB95.TXT", delim = "\t", col_names = FALSE)  
-VIAB96 <- read_delim("data/Vinö/VNTAB96.TXT", delim = "\t", col_names = FALSE)
-VIAB97 <- read_delim("data/Vinö/VNTAB97.TXT", delim = "\t", col_names = FALSE)
-VIAB98 <- read_delim("data/Vinö/VNTAB98.TXT", delim = "\t", col_names = FALSE)
-VIAB99 <- read_delim("data/Vinö/VNTAB99.TXT", delim = "\t", col_names = FALSE) 
-VIAB00 <- read_delim("data/Vinö/Vntab00.TXT", delim = "\t", col_names = FALSE) 
-VIAB01 <- read_delim("data/Vinö/VNTAB01.TXT", delim = "\t", col_names = FALSE) 
+VIAB95 <- read_delim("data/growth-data/Vinö/VNTAB95.TXT", delim = "\t", col_names = FALSE)  
+VIAB96 <- read_delim("data/growth-data/Vinö/VNTAB96.TXT", delim = "\t", col_names = FALSE)
+VIAB97 <- read_delim("data/growth-data/Vinö/VNTAB97.TXT", delim = "\t", col_names = FALSE)
+VIAB98 <- read_delim("data/growth-data/Vinö/VNTAB98.TXT", delim = "\t", col_names = FALSE)
+VIAB99 <- read_delim("data/growth-data/Vinö/VNTAB99.TXT", delim = "\t", col_names = FALSE) 
+VIAB00 <- read_delim("data/growth-data/Vinö/Vntab00.TXT", delim = "\t", col_names = FALSE) 
+VIAB01 <- read_delim("data/growth-data/Vinö/VNTAB01.TXT", delim = "\t", col_names = FALSE) 
 
 VIAB_95_01 <- bind_rows(VIAB95, VIAB96, VIAB97, VIAB98, VIAB99, VIAB00, VIAB01)
 
@@ -1951,7 +1951,7 @@ VIAB_95_01 <- VIAB_95_01 %>%
 VIAB_95_01 <- VIAB_95_01 %>% mutate(ID = paste(catch_year, sample_nr, area, sep = "_")) # add date + gear here as well
 
 #**** Read in the .xls files =======================================================
-VNAB_02 <- readxl::read_xls("data/Vinö/VNabbot2002.xls", sheet = 1)
+VNAB_02 <- readxl::read_xls("data/growth-data/Vinö/VNabbot2002.xls", sheet = 1)
 # The warning is due to a date
 
 # Go from wide to long data
@@ -2111,5 +2111,5 @@ d_full <- d_full |>
   mutate(keep = ifelse(area %in% c("FM", "BT") & catch_year > 2004, "N", "Y")) |> 
   filter(keep == "Y")
 
-write_csv(d, "data/for-analysis/dat.csv")
-write_csv(d_full, "data/all_dat.csv")
+write_csv(d, "data/clean/dat.csv")
+#write_csv(d_full, "data/all_dat.csv")
