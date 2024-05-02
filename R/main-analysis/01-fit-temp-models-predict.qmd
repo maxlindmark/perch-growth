@@ -60,6 +60,8 @@ gdat <- readr::read_csv("https://raw.githubusercontent.com/maxlindmark/perch-gro
 
 gdat$area_cohort_age <- as.factor(paste(gdat$area, gdat$cohort, gdat$age_bc))
 
+order <- read_csv(paste0(home, "/output/ranked_temps.csv"))
+
 gdat <- gdat %>%
   group_by(area_cohort_age) %>% 
   filter(n() > 10) %>% 
@@ -305,14 +307,16 @@ area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) %>%
   mutate_at(c("lat","lon"), as.numeric) %>% 
   arrange(desc(lat))
 
+order <- read_csv(paste0(home, "/output/ranked_temps.csv"))
+
 ggplot(preds_area, aes(year, temp, color = temp)) + 
-  facet_wrap(~factor(area, levels = area_attr$area), ncol = 4) + 
+  facet_wrap(~factor(area, levels = order$area), ncol = 5) + 
   geom_line(linewidth = 0.6) +
   labs(x = "Year", y = "Model-predicted annual average temperature (°C)") + 
   scale_color_viridis(option = "magma", name = "Site") +
   guides(color = "none") 
 
-ggsave(paste0(home, "/figures/annual_average_temperature.pdf"), width = 17, height = 12, units = "cm")
+ggsave(paste0(home, "/figures/annual_average_temperature.pdf"), width = 17, height = 9, units = "cm")
 
 # Check year range
 preds_area %>% 

@@ -243,7 +243,7 @@ fits_ind <- ggplot(d2, aes(age_bc, length_mm, group = ID, color = ID)) +
   scale_color_viridis(discrete = TRUE, name = "Site", option = "cividis") +
   scale_x_continuous(breaks = seq(1, 20, by = 2)) + 
   labs(x = "Age (years)", y = "Length (mm)") +
-  facet_wrap(~factor(area, levels = (arrange(area_attr, desc(lat)))$area), ncol = 5)
+  facet_wrap(~factor(area, order$area), ncol = 5)
 
 A <- IVBG %>% 
   ggplot(aes(factor(area, order$area), A, fill = factor(area, order$area))) + 
@@ -579,7 +579,7 @@ no_adapt <- bind_rows(no_adapt_1, no_adapt_2, no_adapt_3)
 
 p1 <- ggplot(no_adapt, aes(temp, growth_rate, color = pop)) + 
   geom_line(linewidth = 1.2, alpha = 0.8) + 
-  labs(tag = "No adaptation", y = "Increasing growth rate →", x = "Increasing temperature →", color = "Site") +
+  labs(tag = "No adaptation", y = "Growth rate →", x = "Temperature →", color = "Site") +
   theme(plot.tag = element_text(size = 9),
         plot.tag.position = c(0.23, 0.94),
         legend.position.inside = c(0.5, 0.1),
@@ -611,7 +611,7 @@ adapt_2 <- tibble(temp = seq(10, 20, length.out = 500)) %>%
 adapt_3 <- tibble(temp = seq(15, 25, length.out = 500)) %>% 
   mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
          temp_sc_sq = temp_sc*temp_sc) %>% 
-  mutate(growth_rate = par$intercept*0.715 + temp_sc*(par$b1 * 5) + temp_sc_sq*(par$b2*0.11),
+  mutate(growth_rate = par$intercept*0.725 + temp_sc*(par$b1 * 5) + temp_sc_sq*(par$b2*0.11),
          pop = "Warm",
          growth_rate = growth_rate + 2)
 

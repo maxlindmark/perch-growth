@@ -1,4 +1,4 @@
-# Materials for "Non-linear growth-temperature relationship leads to opposite response to warming in cold versus warm populations"
+# Materials for "Stronger effects of temperature on growth in cool than in warm populations could be due to lack of local adaptation"
 
 This repo contains data and R code for collating and analyzing time series of back calculated length-at-age data on perch along a latitudinal and thermal gradient in the Baltic Sea (from database KUL: https://www.slu.se/institutioner/akvatiska-resurser/databaser/kul/ and SLU). With [Anna Gårdmark](https://internt.slu.se/en/cv-originals/anna-gardmark/) and [Jan Ohlberger](http://janohlberger.com/Homepage/).
 
@@ -15,4 +15,4 @@ To simply view the analyses, download the .qmd or .html files. To reproduce the 
 
 Once you've successfully run `renv::restore()` you can reproduce our results by running R/main-analysis/01-fit-temp-models-predict.qmd and R/main-analysis/02-fit-vbge.qmd-->
 
-Scripts for data preparation are found in prepare-data. This repository contains all raw files needed except ERSST data because it's too big. The code to download it again is in the script though. You can also jump straight to the analysis-scripts using data in data/for-analysis, where output from data preparation scripts are stored.
+Scripts for data preparation are found in prepare-data. This repository contains all raw files needed. You can also jump straight to the analysis-scripts using data in data/for-analysis, where output from data preparation scripts are stored.
