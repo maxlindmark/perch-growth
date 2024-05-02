@@ -67,7 +67,7 @@ R/supp-analysis/
 .RData
 .Ruserdata
 /data/*
-!data/for-analysis/
+!data/clean/
 !data/temp-data/
 !data/temp-data-fishing/
 !data/temp-data-fishing-firre/
