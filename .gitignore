@@ -68,9 +68,9 @@ R/supp-analysis/
 .Ruserdata
 /data/*
 !data/clean/
-!data/temp-data/
-!data/temp-data-fishing/
-!data/temp-data-fishing-firre/
+!data/growth-data/
+!data/temperature-data/
+!data/predicted-temperature/
 
 .DS_Store
 R/.DS_Store
