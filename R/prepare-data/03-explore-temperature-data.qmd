@@ -55,11 +55,11 @@ invisible(sapply(FUN = source, paste0(home, "/R/functions/", fxn)))
 
 ```{r load and clean temp logger data}
 home <- here::here()
-filenames <- list.files(paste0(home,"/data/temp-data"))
+filenames <- list.files(paste0(home,"/data/temperature-data/temp-data"))
 raw_data <- NULL
 
 for(i in 1:length(filenames)) {
-  dat <- read_excel(paste0(home, "/data/temp-data/", filenames[i]))
+  dat <- read_excel(paste0(home, "/data/temperature-data/temp-data/", filenames[i]))
   if(i == 1) names <- colnames(dat)
   if(i != 1) names(dat) <- names
   area <- substr(filenames[i], 1, 2)
@@ -135,7 +135,7 @@ log_dat %>%
 ## Temperature at fishing
 
 ```{r}
-kul_dat <- read_excel(paste0(home, "/data/temp-data-fishing/temp_at_fishing.xlsx"), skip = 4) %>% 
+kul_dat <- read_excel(paste0(home, "/data/temperature-data/temp-data-fishing/temp_at_fishing.xlsx"), skip = 4) %>% 
   mutate(Lokal = ifelse(Lokal == "Simpevarp" & Fångstområde == "Ekö", "SI_EK", Lokal),
          Lokal = ifelse(Lokal == "Simpevarp" & Fångstområde == "Hamnefjärden", "SI_HA", Lokal)) %>% 
   mutate(area = recode_factor(Lokal,
@@ -171,10 +171,10 @@ ggplot(kul_dat, aes(x = year, y = temp)) +
 
 # Now we need to add in the rest of the data from Firre database
 home <- here::here()
-filenames <- list.files(paste0(home,"/data/temp-data-fishing-firre"))
+filenames <- list.files(paste0(home,"/data/temperature-data/temp-data-fishing-firre"))
 raw_data<-NULL
 for(i in 1:length(filenames)) {
-  dat <- read_excel(paste0(home,"/data/temp-data-fishing-firre/",filenames[i]))
+  dat <- read_excel(paste0(home,"/data/temperature-data/temp-data-fishing-firre/",filenames[i]))
   if(i == 1) names <- colnames(dat)
   if(i != 1) names(dat) <- names
   area <- substr(filenames[i], 1, 2)
@@ -274,7 +274,8 @@ lat_ranges <- lon_ranges <- list() # for testing only
 for(a in 1:nareas) {
   lat_range <- c(2*floor(area_attr$lat[a]/2), 2*floor(area_attr$lat[a]/2) + 2)
   lon_range <- c(2*floor(area_attr$lon[a]/2), 2*floor(area_attr$lon[a]/2) + 2)
-  sst_area <- load_ersst_data(years = c(1940, 2022), data.dir = paste0(home, "/data"), ncfilename = "sst.mnmean.nc", latrange = lat_range, lonrange = lon_range)
+  sst_area <- load_ersst_data(years = c(1940, 2022), data.dir = paste0(home, "/data/temperature-data/"),
+                              ncfilename = "sst.mnmean.nc", latrange = lat_range, lonrange = lon_range)
   sst_area$area <- area_attr$area[a]
   sst_areas <- bind_rows(sst_areas, sst_area)
   lat_ranges[[a]] <- lat_range
@@ -396,6 +397,6 @@ all_temp <- all_temp %>%
 
 ```{r}
 # Save data for model fitting
-write_csv(all_temp, paste0(home, "/data/for-analysis/temp_data_for_fitting.csv"))
+write_csv(all_temp, paste0(home, "/data/clean/temp_data_for_fitting.csv"))
 ```
 

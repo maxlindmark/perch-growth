@@ -57,7 +57,7 @@ Load cache
 ```{r}
 #| cache: false
 d <- #read_csv(paste0(home, "/data/for-analysis/dat.csv")) %>% 
-  read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/for-analysis/dat.csv") %>% 
+  read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/clean/dat.csv") %>% 
   filter(age_ring == "Y", # use only length-at-age by filtering on age_ring
          !area %in% c("VN", "TH")) 
 
@@ -623,7 +623,7 @@ adapt <- bind_rows(adapt_1, adapt_2, adapt_3)
 p2 <- 
   ggplot(adapt, aes(temp, growth_rate, color = pop)) + 
   geom_line(linewidth = 1.2, alpha = 0.8) + 
-  labs(tag = "Local adaptation", y = "Increasing growth rate →", x = "Increasing temperature →") +
+  labs(tag = "Local adaptation", y = "Growth rate →", x = "Temperature →") +
   theme(plot.tag = element_text(size = 9),
         plot.tag.position = c(0.2, 0.94),
         axis.text.y = element_blank(),

@@ -48,7 +48,7 @@ Load cache
 ## Read data
 
 ```{r}
-d <- read_csv(paste0(home, "/data/for-analysis/temp_data_for_fitting.csv"))
+d <- read_csv(paste0(home, "/data/clean/temp_data_for_fitting.csv"))
 
 d <- d %>% mutate(area = as.factor(area),
                  source_f = as.factor(source),
@@ -56,7 +56,7 @@ d <- d %>% mutate(area = as.factor(area),
   filter(!area %in% c("VN", "TH")) # VN: no logger data, TH: to short time series
 
 # Keep track of the years for which we have cohorts for matching with cohort data
-gdat <- readr::read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/for-analysis/dat.csv")
+gdat <- readr::read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/clean/dat.csv")
 
 gdat$area_cohort_age <- as.factor(paste(gdat$area, gdat$cohort, gdat$age_bc))
 
