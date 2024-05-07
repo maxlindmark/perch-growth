@@ -578,22 +578,20 @@ no_adapt_3 <- tibble(temp = seq(15, 25, length.out = 500)) %>%
 no_adapt <- bind_rows(no_adapt_1, no_adapt_2, no_adapt_3)
 
 p1 <- ggplot(no_adapt, aes(temp, growth_rate, color = pop)) + 
-  geom_line(linewidth = 1.2, alpha = 0.8) + 
-  labs(tag = "No adaptation", y = "Growth rate →", x = "Temperature →", color = "Site") +
-  theme(plot.tag = element_text(size = 9),
-        plot.tag.position = c(0.23, 0.94),
-        legend.position.inside = c(0.5, 0.1),
+  geom_line(linewidth = 1.2, alpha = 0.9) + 
+  labs(y = "Growth rate →", x = "Temperature →", color = "Site", 
+       title = "No adaptation") +
+  theme(legend.position.inside = c(0.5, 0.12),
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
+        axis.title.x = element_blank(),
         axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(), 
+        axis.ticks.x = element_blank(),
         legend.direction = "horizontal") + 
   guides(color = guide_legend(position = "inside", title.position = "top", title.hjust = 0.5))
 
 
-p1
-
-# Now do "local adaption
+# Now do "local adaption and increasing max growth with temperature
 adapt_1 <- tibble(temp = seq(5, 15, length.out = 500)) %>% 
   mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
          temp_sc_sq = temp_sc*temp_sc) %>% 
@@ -623,20 +621,63 @@ adapt <- bind_rows(adapt_1, adapt_2, adapt_3)
 p2 <- 
   ggplot(adapt, aes(temp, growth_rate, color = pop)) + 
   geom_line(linewidth = 1.2, alpha = 0.8) + 
-  labs(tag = "Local adaptation", y = "Growth rate →", x = "Temperature →") +
-  theme(plot.tag = element_text(size = 9),
-        plot.tag.position = c(0.2, 0.94),
-        axis.text.y = element_blank(),
+  labs(y = "Growth rate →", x = "Temperature →", title = "Local adaptation", 
+       subtitle = "Temperature-dependent maximum growth") +
+  theme(axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
         axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) + 
+        axis.ticks.x = element_blank(),
+        title = element_text(size = 11)) + 
   guides(color = "none")
 
-p1 + p2 + 
-  plot_layout(axes = "collect") &
+
+# Now do "local adaption and constant max growth with temperature
+adaptb_1 <- tibble(temp = seq(5, 13, length.out = 500)) %>% 
+  mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
+         temp_sc_sq = temp_sc*temp_sc) %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 4) + temp_sc_sq*(par$b2*0.18),
+         pop = "Cold")
+
+adaptb_2 <- tibble(temp = seq(5, 13, length.out = 500)) %>% 
+  mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
+         temp_sc_sq = temp_sc*temp_sc) %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 4) + temp_sc_sq*(par$b2*0.18),
+         pop = "Medium",
+         growth_rate = growth_rate) %>% 
+  mutate(temp = temp + 5)
+
+adaptb_3 <- tibble(temp = seq(5, 13, length.out = 500)) %>% 
+  mutate(temp_sc = (temp - mean(VBG$temp) / sd(VBG$temp)),
+         temp_sc_sq = temp_sc*temp_sc) %>% 
+  mutate(growth_rate = par$intercept + temp_sc*(par$b1 * 4) + temp_sc_sq*(par$b2*0.18),
+         pop = "Warm",
+         growth_rate = growth_rate) %>% 
+  mutate(temp = temp + 10)
+
+adaptb <- bind_rows(adaptb_1, adaptb_2, adaptb_3)
+
+p3 <- 
+  ggplot(adaptb, aes(temp, growth_rate, color = pop)) + 
+  geom_line(linewidth = 1.2, alpha = 0.8) + 
+  labs(y = "Growth rate →", x = "Temperature →", title = "Local adaptation",
+       subtitle = "Constant maximum growth") +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        title = element_text(size = 11)) + 
+  guides(color = "none")
+
+(p1 + p2 + p3) + 
+  # plot_layout(axes = "collect") &
+  theme(axis.title = element_text(size = 11),
+        plot.title = element_text(size = 11)) &
   scale_color_manual(values = colors[c(10, 5, 1)])
 
-ggsave(paste0(home, "/figures/concept.pdf"), width = 17, height = 8, units = "cm", device = cairo_pdf)
+ggsave(paste0(home, "/figures/concept.pdf"), width = 20, height = 8, units = "cm", device = cairo_pdf)
 ```
 
 Supplementary plot
@@ -644,8 +685,6 @@ Supplementary plot
 ```{r}
 # Plot prior vs posterior
 # Refit with sampling on prior
-
-ggsave(paste0(home, "/figures/supp/pp_check.pdf" ), width = 11, height = 11, units = "cm")
 
 m4p <- brm(A ~ temp_sc + temp_sq_sc + (1 + temp_sc + temp_sq_sc | area_f),
            data = dat,
@@ -700,6 +739,9 @@ pp_check(m4p) +
   theme(legend.position.inside = c(0.8, 0.8)) + 
   guides(color = guide_legend(position = "inside")) + 
   labs(x = "Growth coefficient (*A*)")
+
+# Posterior predictive
+ggsave(paste0(home, "/figures/supp/pp_check.pdf" ), width = 11, height = 11, units = "cm")
 ```
 
 Fit models of K and Linf to temperature

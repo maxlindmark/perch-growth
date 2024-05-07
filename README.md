@@ -1,4 +1,4 @@
-# Materials for "Stronger effects of temperature on growth in cool than in warm populations could be due to lack of local adaptation"
+# Materials for "Stronger effect of temperature on body growth in cool than in warm populations suggests lack of local adaptation"
 
 This repo contains data and R code for collating and analyzing time series of back calculated length-at-age data on perch along a latitudinal and thermal gradient in the Baltic Sea (from database KUL: https://www.slu.se/institutioner/akvatiska-resurser/databaser/kul/ and SLU). With [Anna Gårdmark](https://internt.slu.se/en/cv-originals/anna-gardmark/) and [Jan Ohlberger](http://janohlberger.com/Homepage/).
 
