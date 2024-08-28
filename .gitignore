@@ -72,7 +72,7 @@ R/supp-analysis/
 !data/temperature-data/
 !data/predicted-temperature/
 
-*/scrap/
+scrap/
 
 # meeting notes
 meeting notes.docx
