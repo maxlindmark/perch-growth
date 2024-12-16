@@ -1,3 +1,3 @@
-Gompertz <- function(age,Linf,k,lag){
-  Linf*exp(-lag*exp(-k*age))
+Gompertz <- function(age, Linf, k, lag) {
+  Linf * exp(-lag * exp(-k * age))
 }
