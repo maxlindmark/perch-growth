@@ -1,5 +1,4 @@
 ## Make map plot
-# Map plot
 library(rnaturalearth)
 library(rnaturalearthdata)
 library(tidyverse)
@@ -51,13 +50,13 @@ vbg <- read_csv(paste0(home, "/output/vbg.csv"))
 
 df <- data.frame(
   area = c(
-    "BS", "BT", "FB", "FM", "HO", "JM", "MU", "RA",
-    "SI_EK", "SI_HA"
+    "BS", "BT*", "FB", "FM", "HO", "JM", "MU", "RA",
+    "SI_EK", "SI_HA*"
   ),
   area_name = c(
-    "Brunskär", "Biotest*", "Finbo", "Forsmark",
+    "Brunskär", "Biotest", "Finbo", "Forsmark",
     "Holmön", "Kvädofjärden", "Muskö", "Rånea",
-    "Simpevarp Ek", "Simpevarp Ha*"
+    "Simpevarp Ek", "Simpevarp Ha"
   ),
   lon = c(21.5, 18.1, 19.5, 18, 20.9, 16.8, 18.1, 22.3, 16.6, 16.7),
   lat = c(60, 60.4, 60.3, 60.5, 63.7, 58, 59, 65.9, 57.3, 57.4)
@@ -66,6 +65,9 @@ df <- data.frame(
 df <- add_utm_columns(df, ll_names = c("lon", "lat"), units = "m")
 
 # Join in the full area names from df
+order <- order |> 
+  mutate(area = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area))
+
 order <- left_join(order, df %>% select(area, area_name))
 
 nareas <- length(unique(order$area)) + 2 # to skip the brightest colors that are hard to read
@@ -110,14 +112,19 @@ p1 <-
       line_col = "grey20"
     )
   )
-
-vbg <- left_join(vbg, order, by = "area")
+vbg <- vbg |> 
+  mutate(area = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area)) |> 
+  left_join(order, by = "area")
 
 vbg <- vbg %>% mutate(area_full = paste(area_name, paste0("(", area, ")")))
 order <- order %>% mutate(area_full = paste(area_name, paste0("(", area, ")")))
 df <- df %>% mutate(area_full = paste(area_name, paste0("(", area, ")")))
 
 order_facet <- df %>% arrange(desc(lat))
+
+unique(df$area)
+unique(df$area_full)
+unique(df$area_name)
 
 p2 <- ggplot(vbg, aes(cohort, A,
   size = n,

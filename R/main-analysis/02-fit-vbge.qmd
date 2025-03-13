@@ -233,6 +233,12 @@ d2 <- d |>
   left_join(IVBG2, by = "ID") |>
   mutate(length_mm_pred = linf * (1 - exp(-k * age_bc)))
 
+order <- order |> 
+  mutate(area2 = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area))
+
+d2 <- d2 |> 
+  mutate(area2 = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area))
+
 fits_ind <- ggplot(d2, aes(age_bc, length_mm, group = ID, color = ID)) +
   geom_jitter(width = 0.3, height = 0, alpha = 0.5, size = 0.4) +
   geom_line(aes(age_bc, length_mm_pred, group = ID, color = ID),
@@ -242,10 +248,11 @@ fits_ind <- ggplot(d2, aes(age_bc, length_mm, group = ID, color = ID)) +
   scale_color_viridis(discrete = TRUE, name = "Site", option = "cividis") +
   scale_x_continuous(breaks = seq(1, 20, by = 2)) +
   labs(x = "Age (years)", y = "Length (mm)") +
-  facet_wrap(~ factor(area, order$area), ncol = 5)
+  facet_wrap(~ factor(area2, order$area2), ncol = 5)
 
 A <- IVBG |>
-  ggplot(aes(factor(area, order$area), A, fill = factor(area, order$area))) +
+  mutate(area = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area)) |> 
+  ggplot(aes(factor(area, order$area2), A, fill = factor(area, order$area2))) +
   coord_cartesian(ylim = c(22, 90)) +
   geom_violin(alpha = 0.8, color = NA) +
   geom_boxplot(outlier.color = NA, width = 0.2, alpha = 0.9, fill = NA, size = 0.4) +
@@ -267,18 +274,21 @@ k <- IVBG |>
   geom_boxplot(outlier.color = NA, width = 0.2, alpha = 0.9, fill = NA, size = 0.4) +
   scale_fill_manual(values = colors, name = "Site") +
   guides(fill = "none", color = "none") +
-  labs(x = "Site", y = expression(italic(k)))
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank()) +
+  labs(y = expression(italic(k)))
 
 linf <- IVBG |>
   filter(linf < 2300) |>
   filter(linf > 130) |>
-  ggplot(aes(factor(area, order$area), linf, fill = factor(area, order$area))) +
+  mutate(area2 = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area)) |> 
+  ggplot(aes(factor(area2, order$area2), linf, fill = factor(area2, order$area2))) +
   geom_violin(alpha = 0.8, color = NA) +
   geom_boxplot(outlier.color = NA, width = 0.1, alpha = 0.9, fill = NA, size = 0.4) +
   coord_cartesian(ylim = c(0, 2000)) +
   scale_fill_manual(values = colors, name = "Site") +
   guides(fill = "none", color = "none") +
-  labs(x = "", y = expression(paste(italic(L[infinity]), " [mm]")))
+  labs(x = "Site", y = expression(paste(italic(L[infinity]), " [mm]")))
 
 k / linf
 
@@ -298,10 +308,12 @@ dat <- VBG |>
   )
 
 # Non-scaled x-axis
+labels <- ifelse(order$area %in% c("SI_HA", "BT"), paste0(order$area, "*"), order$area)
+
 scatter <- ggplot(dat, aes(temp, A, color = factor(area, order$area)), size = 0.6) +
   geom_point(size = 0.9) +
-  scale_color_manual(values = colors, name = "Site") +
-  scale_fill_manual(values = colors, name = "Site")
+  scale_color_manual(values = colors, name = "Site", labels = labels) +
+  scale_fill_manual(values = colors, name = "Site", labels = labels)
 
 scatter +
   geom_smooth(method = "gam", formula = y ~ s(x, k = 3), se = FALSE)
@@ -754,7 +766,8 @@ p3 <-
   # plot_layout(axes = "collect") &
   theme(
     axis.title = element_text(size = 11),
-    plot.title = element_text(size = 11)
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10)
   ) &
   scale_color_manual(values = colors[c(10, 5, 1)])
 
@@ -829,7 +842,8 @@ ggsave(paste0(home, "/figures/supp/brms_prior.pdf"), width = 17, height = 17, un
 
 # Posterior predictive
 pp_check(m4p) +
-  theme(legend.position.inside = c(0.8, 0.8)) +
+  theme(legend.position.inside = c(0.8, 0.8),
+        axis.text.x = element_markdown()) +
   guides(color = guide_legend(position = "inside")) +
   labs(x = "Growth coefficient (*A*)")
 
@@ -920,11 +934,13 @@ m4l_pred <- dat |>
 
 # m4_kl <- bind_rows(m4k_pred, m4l_pred)
 
+labels <- ifelse(order$area %in% c("SI_HA", "BT"), paste0(order$area, "*"), order$area)
+
 # K
 pk <- ggplot(dat, aes(temp, k, color = factor(area, order$area)), size = 0.6) +
   geom_point() +
-  scale_color_manual(values = colors, name = "Site") +
-  scale_fill_manual(values = colors, name = "Site") +
+  scale_color_manual(values = colors, name = "Site", labels = labels) +
+  scale_fill_manual(values = colors, name = "Site", labels = labels) +
   guides(
     fill = "none",
     color = guide_legend(
@@ -963,8 +979,8 @@ pk <- ggplot(dat, aes(temp, k, color = factor(area, order$area)), size = 0.6) +
 # Linf
 pl <- ggplot(dat, aes(temp, linf, color = factor(area, order$area)), size = 0.6) +
   geom_point() +
-  scale_color_manual(values = colors, name = "Site") +
-  scale_fill_manual(values = colors, name = "Site") +
+  scale_color_manual(values = colors, name = "Site", labels = labels) +
+  scale_fill_manual(values = colors, name = "Site", labels = labels) +
   theme(
     legend.position = "bottom",
     legend.direction = "horizontal"

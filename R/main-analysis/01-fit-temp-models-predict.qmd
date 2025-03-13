@@ -66,6 +66,9 @@ gdat$area_cohort_age <- as.factor(paste(gdat$area, gdat$cohort, gdat$age_bc))
 
 order <- read_csv(paste0(home, "/output/ranked_temps.csv"))
 
+order <- order |> 
+  mutate(area2 = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area))
+
 gdat <- gdat |>
   group_by(area_cohort_age) |>
   filter(n() > 10) |>
@@ -94,6 +97,9 @@ d <- d |>
 
 # Drop heated areas actually for the full plot
 df <- d |> filter(!area %in% c("BT", "SI_HA"))
+
+nareas <- length(unique(order$area)) + 2 # to skip the brightest colors that are hard to read
+colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(6, 7)]
 ```
 
 ## Plot data
@@ -239,6 +245,7 @@ Plot detailed exploration of predictions
 # Loop trough all areas, plot temperature as a function of yday, color by data source, facet by year
 
 nd_area |>
+  mutate(area = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area)) |> 
   ggplot(aes(yday, y = year, fill = pred, color = pred)) +
   geom_raster() +
   facet_wrap(~area, ncol = 4) +
@@ -333,13 +340,14 @@ p1 <- ggplot(seasonal, aes(yday, temp, color = factor(area, levels = order$area)
 
 # Summer temperatures
 p2 <- nd_area |>
+  mutate(area2 = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area)) |> 
   filter(source == "logger") |>
   filter(year %in% c(1985:2000)) |>
   mutate(date = as.Date(yday - 1, origin = "2000-01-01"),
          month = month(date)) |> 
   filter(month %in% c(6:8)) |>
-  summarise(temp = mean(pred), .by = c(area, year)) |>
-  ggplot(aes(factor(area, order$area), temp, color = factor(area, levels = order$area))) + 
+  summarise(temp = mean(pred), .by = c(area2, year)) |>
+  ggplot(aes(factor(area2, order$area2), temp, color = factor(area2, levels = order$area2))) + 
   geom_jitter(height = 0, width = 0.1) +
   geom_boxplot(width = 0.2, fill = NA) + 
   guides(color = "none") +
@@ -407,10 +415,13 @@ area_attr <- data.frame(cbind(area = area, lat = lat, lon = lon)) |>
   mutate_at(c("lat", "lon"), as.numeric) |>
   arrange(desc(lat))
 
-order <- read_csv(paste0(home, "/output/ranked_temps.csv"))
+order <- read_csv(paste0(home, "/output/ranked_temps.csv")) |> 
+  mutate(area2 = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area))
 
-ggplot(preds_area, aes(year, temp, color = temp)) +
-  facet_wrap(~ factor(area, levels = order$area), ncol = 5) +
+preds_area |> 
+  mutate(area2 = ifelse(area %in% c("SI_HA", "BT"), paste0(area, "*"), area)) |> 
+  ggplot(aes(year, temp, color = temp)) +
+  facet_wrap(~ factor(area2, levels = order$area2), ncol = 5) +
   geom_line(linewidth = 0.6) +
   labs(x = "Year", y = "Model-predicted annual average temperature (°C)") +
   scale_color_viridis(option = "magma", name = "Site") +
@@ -441,9 +452,3 @@ preds_area |>
 # Save prediction df
 write_csv(preds_area, paste0(home, "/output/gam_predicted_temps.csv"))
 ```
-
-```{r}
-
-
-```
-
