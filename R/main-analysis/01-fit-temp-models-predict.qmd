@@ -423,11 +423,11 @@ preds_area |>
   ggplot(aes(year, temp, color = temp)) +
   facet_wrap(~ factor(area2, levels = order$area2), ncol = 5) +
   geom_line(linewidth = 0.6) +
-  labs(x = "Year", y = "Model-predicted annual average temperature (°C)") +
+  labs(x = "Year", y = "Predicted annual average temperature (°C)") +
   scale_color_viridis(option = "magma", name = "Site") +
   guides(color = "none")
 
-ggsave(paste0(home, "/figures/annual_average_temperature.pdf"), width = 17, height = 9, units = "cm")
+ggsave(paste0(home, "/figures/annual_average_temperature.pdf"), width = 16.5, height = 8.75, units = "cm")
 
 # Check year range
 preds_area |>

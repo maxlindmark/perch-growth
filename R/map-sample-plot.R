@@ -163,7 +163,7 @@ p2
 
 p1 + p2 + plot_annotation(tag_levels = "A")
 
-ggsave(paste0(home, "/figures/map_sample_size.pdf"), width = 17, height = 17, units = "cm")
+ggsave(paste0(home, "/figures/map_sample_size.pdf"), width = 22, height = 22, units = "cm")
 
 # p1 + (p2 & theme(strip.text = element_text(size = 7)))
 # ggsave(paste0(home, "/figures/for-talks/map_sample_size.pdf"), width = 15, height = 15, units = "cm")

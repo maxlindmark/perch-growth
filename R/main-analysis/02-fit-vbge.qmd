@@ -20,7 +20,6 @@ execute:
 ## Load libraries
 
 ```{r}
-#| cache: false
 #| message: false
 #| warning: false
 library(tidyverse)
@@ -47,16 +46,9 @@ fxn <- list.files(paste0(home, "/R/functions"))
 invisible(sapply(FUN = source, paste0(home, "/R/functions/", fxn)))
 ```
 
-Load cache
-
-```{r}
-# qwraps2::lazyload_cache_dir(path = paste0(home, "/R/analyze-data/02-fit-vbge_cache/html"))
-```
-
 ## Read and trim data
 
 ```{r}
-#| cache: false
 d <- # read_csv(paste0(home, "/data/for-analysis/dat.csv")) |>
   read_csv("https://raw.githubusercontent.com/maxlindmark/perch-growth/master/data/clean/dat.csv") |>
   filter(
@@ -118,7 +110,6 @@ IVBG <- d |>
 ```
 
 ```{r}
-#| cache: false
 IVBG <- IVBG |> drop_na(k) # The NAs are because the model didn't converge or because they were below the threshold age
 
 IVBG <- IVBG |>
@@ -180,7 +171,6 @@ write_csv(sample_size, paste0(home, "/output/sample_size.csv"))
 ## Add GAM-predicted temperature to growth models
 
 ```{r}
-#| cache: false
 pred_temp <- read_csv(paste0(home, "/output/gam_predicted_temps.csv")) |>
   rename(cohort = year)
 
@@ -214,7 +204,6 @@ colors <- colorRampPalette(brewer.pal(name = "RdYlBu", n = 10))(nareas)[-c(6, 7)
 ## Plot VBGE fits
 
 ```{r}
-#| cache: false
 # Sample 30 IDs per area and plot their data and VBGE fits
 set.seed(4)
 ids <- IVBG |>
@@ -264,7 +253,7 @@ A <- IVBG |>
 
 fits_ind / A + plot_annotation(tag_levels = "A") #+ plot_layout(heights = c(1, 1.8))
 
-ggsave(paste0(home, "/figures/vb_pars_fits.pdf"), width = 17, height = 18, units = "cm")
+ggsave(paste0(home, "/figures/vb_pars_fits.pdf"), width = 16, height = 17, units = "cm")
 
 # Supp plot for K and Linf
 k <- IVBG |>
@@ -464,6 +453,11 @@ p0 <- scatter +
   )) +
   theme(
     legend.position.inside = c(0.5, 0.05),
+    #legend.position = "bottom",
+    legend.spacing.y = unit(0, "lines"),
+    legend.spacing.x = unit(0, "lines"),
+    legend.key.size = unit(0.25, "cm"),
+    legend.text = element_text(size = 7),
     axis.title.y = ggtext::element_markdown()
   ) +
   labs(
@@ -473,7 +467,7 @@ p0 <- scatter +
 
 p0
 
-ggsave(paste0(home, "/figures/a_conditional.pdf"), width = 17, height = 17, units = "cm")
+ggsave(paste0(home, "/figures/a_conditional.pdf"), width = 12, height = 12, units = "cm")
 
 # Binned plot?
 dat |> 
@@ -552,7 +546,7 @@ p2 <- m4 |>
 
 p2
 
-ggsave(paste0(home, "/figures/random_intercepts.pdf"), width = 11, height = 11, units = "cm")
+ggsave(paste0(home, "/figures/random_intercepts.pdf"), width = 12, height = 12, units = "cm")
 
 
 # Check significance of slopes?!
@@ -701,8 +695,7 @@ p2 <-
     axis.ticks.y = element_blank(),
     axis.title.y = element_blank(),
     axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    title = element_text(size = 11)
+    axis.ticks.x = element_blank()
   ) +
   guides(color = "none")
 
@@ -757,21 +750,20 @@ p3 <-
     axis.text.x = element_blank(),
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    title = element_text(size = 11)
+    axis.ticks.x = element_blank()
   ) +
   guides(color = "none")
 
-(p1 + p2 + p3) +
+(p1 + p2 + p3) &
   # plot_layout(axes = "collect") &
   theme(
-    axis.title = element_text(size = 11),
-    plot.title = element_text(size = 11),
-    plot.subtitle = element_text(size = 10)
+    axis.title = element_text(size = 10),
+    plot.title = element_text(size = 10),
+    plot.subtitle = element_text(size = 8.3)
   ) &
   scale_color_manual(values = colors[c(10, 5, 1)])
 
-ggsave(paste0(home, "/figures/concept.pdf"), width = 20, height = 8, units = "cm", device = cairo_pdf)
+ggsave(paste0(home, "/figures/concept.pdf"), width = 19, height = 7.5, units = "cm", device = cairo_pdf)
 ```
 
 Supplementary plot
